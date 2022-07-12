@@ -91,6 +91,21 @@ plot(x,v);
 title("Phase Diagram of IVP")
 xlabel('x');ylabel('dx/dt');
 
+
+%% compute v(t)
+vt = par.sb*(par.H - par.xbar - x)/par.m;
+pt = interp1(vV,P,vt);
+xt = zeros(size(pt));
+for i = 1:length(pt)
+    xt(i) = XSteam('x_ps',pt(i),s/1e3);
+end
+figure();
+subplot(2,1,1);
+plot(t,xt);
+subplot(2,1,2)
+plot(t,x);
+
+%% 
 function dxdt= xdot(t,x,v)
     dxdt = v;
 end
@@ -111,3 +126,4 @@ function dvdt = vdot1(t,x,v,par)
     
     dvdt = (1./A)*(B * v^2 +C+D+E+F);
 end
+
