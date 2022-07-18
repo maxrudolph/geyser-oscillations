@@ -2,7 +2,7 @@ format long
 clc
 clear
 
-% Set up parameters
+%% Set up parameters
 par.delxy = 5e-2; % vertical difference between xbar and ybar in m
 par.sb = 0.0613; % cross-section of bubble trap in m^2
 par.sc = 5.07e-4;% cross-section of (1-inch) column in m^2
@@ -14,8 +14,7 @@ par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.H = 37.15e-2; % height of bubble trap in m
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
-%(rho=1)g(ybar-xbar) = Pb0-Pa0 from paper
-fill = 0.5; %fraction of chamber above lateral connector that contains water
+fill = 0.9; %fraction of chamber above lateral connector that contains water
 par.xbar = fill.*par.H;
 par.ybar = par.delxy + par.xbar;
 
@@ -29,6 +28,7 @@ Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
 P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
 par.m=Vol_0 / XSteam('vV_p', (P_0*10^(-5))); %vapor mass in kg
 s=XSteam('sV_p',(P_0*10^(-5)))*1000; %specific entropy J*kg^-1*degC^-1
+
 for i=1:length(P)
     vV(i) = XSteam('v_ps',P(i),s/1e3); %specific volume in m^3*kg^-1
     hH(i) = XSteam('h_ps',P(i),s/1e3)*1000; %enthalpy in J*kg^-1
@@ -41,10 +41,11 @@ end
 par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
 par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
 
+%% Initial Conditions
 h=0.001; %time step (s)
 t=0:h:15; %time period of solution in seconds
 
-x0= -0.15*1e-2; %initial displacement in m
+x0= 0.2*1e-2; %initial displacement in m
 v0= 0; %initial velocity in m/s
 
 assert(x0<(par.H-par.xbar)) %check that water cannot overflow
@@ -58,6 +59,7 @@ tdiff = zeros(1,length(t));
 x(1)= x0;
 v(1)= v0;
 
+%%Solving EOM
 %pass parameters into vdot equation easily
 vdot = @(t,x,v) vdot1(t,x,v,par);
 
@@ -74,16 +76,19 @@ for i=1:length(t)-1
     x(i+1) = x(i) + (h/6)*(k1x+2*k2x+2*k3x+k4x);
     v(i+1) = v(i) + (h/6)*(k1v+2*k2v+2*k3v+k4v);
 end
-%%
+%%Plotting
 figure;
-plot(t,x);
+plot(t,x.*1e2);
 title('Solution x(t) of IVP')
-xlabel('t'); grid on
+xlabel('Time (sec)'); grid on
+ylabel('X (cm)');
 
 figure();
 y = par.ybar - par.sb/par.sc*x;
-plot(t,y);
+plot(t,y.*1e2);
 title('Solution y(t)');
+xlabel('Time (sec)');
+ylabel('Y (cm)')
 
 
 figure;
@@ -91,6 +96,19 @@ plot(x,v);
 title("Phase Diagram of IVP")
 xlabel('x');ylabel('dx/dt');
 
+j=length(t);
+cj = (1/j)*fft(x.*1e2);
+
+freq = 1/(h*j).*(0:j-1);
+figure;
+L = floor(j/2); %only care about positive bc for real valued function c(-j) = c*(j)
+magcj = cj(1:L+1) .* conj(cj(1:L+1)); %compute magnitude of coefficients
+semilogx(freq(1:L+1),magcj, 'o-'); %logarithmic plot of coefficients
+xlabel('Frequency (Hz)');
+ylabel('Magnitude (|Cj|^2)');
+title(['Magnitude of Fourier Coefficients, ','steam', ' solution']);
+[maxmag,ind] = max(magcj);
+fprintf('The %s solution oscillates at a frequency of %f. \n', 'steam',freq(ind));
 
 %% compute v(t)
 vt = par.sb*(par.H - par.xbar - x)/par.m;
@@ -100,11 +118,10 @@ for i = 1:length(pt)
     xt(i) = XSteam('x_ps',pt(i),s/1e3);
 end
 figure();
-subplot(2,1,1);
 plot(t,xt);
-subplot(2,1,2)
-plot(t,x);
 
+A = [t',x'];
+writematrix(A, 'steamwrite.txt','Delimiter',' ');
 %% 
 function dxdt= xdot(t,x,v)
     dxdt = v;
@@ -124,6 +141,6 @@ function dvdt = vdot1(t,x,v,par)
     E = -(par.m/par.rho).*par.Fdhdp(vol)*par.FdPdv(vol);
     F = -agp * par.Pa0*10^-5;
     
-    dvdt = (1./A)*(B * v^2 +C+D+E+F);
+    dvdt = (1./A)*(B.*v.^2 +C+D+E+F);
 end
 
