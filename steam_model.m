@@ -1,9 +1,9 @@
-format long
-clc
-clear
-
-%% Set up parameters
-par.delxy = 5e-2; % vertical difference between xbar and ybar in m
+format long;clc;clear;addpath ./XSteam_Matlab_v2.6/;
+P=linspace(0.007,2,5000); %Range of pressure for lookup table (bar)
+vV=zeros(1,length(P));  % vapor volume (m^3/kg)
+hH = zeros(1,length(P));% enthalpy (J/kg)
+dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
+dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
 par.sb = 0.0613; % cross-section of bubble trap in m^2
 par.sc = 5.07e-4;% cross-section of (1-inch) column in m^2
 par.sl = 7.92e-4; %cross-section of lateral connector in m^2
@@ -14,21 +14,23 @@ par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.H = 37.15e-2; % height of bubble trap in m
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
-fill = 0.9; %fraction of chamber above lateral connector that contains water
-par.xbar = fill.*par.H;
-par.ybar = par.delxy + par.xbar;
+%fill = 0.9; %fraction of chamber above lateral connector that contains water
+par.xbar = 30e-2; %mean water height in bubble trap in m, must be in (0,H)
+par.ybar=15e-2; %mean water height in conduit in m, must be greater than Sb/Sc*x0
+par.delxy = par.ybar-par.xbar;
+
+numPar.x0= 0.0005*1e-2; %initial displacement in m
+numPar.v0= 0; %initial velocity in m/s
+numPar.h=0.001; %time step (s)
+numPar.tf = 3;
+numPar.time=0: numPar.h : numPar.tf;
+numPar.j=length(numPar.time);
 
 %% Make a lookup table with pre-computed thermodynamic properties.
-P=linspace(0.007,2,10000); %Range of pressure for lookup table (bar)
-vV=zeros(1,length(P));  % vapor volume (m^3/kg)
-hH = zeros(1,length(P));% enthalpy (J/kg)
-dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
-dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
-Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
+par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
 P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
-par.m=Vol_0 / XSteam('vV_p', (P_0*10^(-5))); %vapor mass in kg
+par.m=par.Vol_0 / XSteam('vV_p', (P_0*10^(-5))); %vapor mass in kg
 s=XSteam('sV_p',(P_0*10^(-5)))*1000; %specific entropy J*kg^-1*degC^-1
-
 for i=1:length(P)
     vV(i) = XSteam('v_ps',P(i),s/1e3); %specific volume in m^3*kg^-1
     hH(i) = XSteam('h_ps',P(i),s/1e3)*1000; %enthalpy in J*kg^-1
@@ -41,47 +43,24 @@ end
 par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
 par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
 
-%% Initial Conditions
-h=0.001; %time step (s)
-t=0:h:15; %time period of solution in seconds
-
-x0= 0.2*1e-2; %initial displacement in m
-v0= 0; %initial velocity in m/s
-
-assert(x0<(par.H-par.xbar)) %check that water cannot overflow
-assert( (par.ybar - par.sb/par.sc*abs(x0)) > 0.0) % assert that water stays above lateral connector on conduit side.
-
-%initialize x and v list
-x= zeros(1,length(t));
-v=zeros(1,length(t));
-tdiff = zeros(1,length(t));
-%set initial conditions
-x(1)= x0;
-v(1)= v0;
-
-%%Solving EOM
-%pass parameters into vdot equation easily
-vdot = @(t,x,v) vdot1(t,x,v,par);
-
-%running RK4, must compute X and V slopes simultaneously
-for i=1:length(t)-1
-    k1x = xdot(t(i),x(i),v(i));
-    k1v = vdot(t(i),x(i),v(i));
-    k2x = xdot((t(i)+(.5*h)), (x(i) + .5*h*k1x),(v(i) + .5*h*k1v));
-    k2v = vdot((t(i)+(.5*h)), (x(i) + .5*h*k1x),(v(i) + .5*h*k1v));
-    k3x = xdot((t(i)+(.5*h)), (x(i) + .5*h*k2x),(v(i) + .5*h*k2v));
-    k3v = vdot((t(i)+(.5*h)), (x(i) + .5*h*k2x),(v(i) + .5*h*k2v));
-    k4x = xdot((t(i)+h), (x(i)+h*k3x), (v(i)+h*k3v));
-    k4v = vdot((t(i)+h), (x(i)+h*k3x), (v(i)+h*k3v));
-    x(i+1) = x(i) + (h/6)*(k1x+2*k2x+2*k3x+k4x);
-    v(i+1) = v(i) + (h/6)*(k1v+2*k2v+2*k3v+k4v);
-end
+[x,v] = steam_solve(par,numPar);
 %%Plotting
+%{
+b = linspace(5e-2,37.15e-2,100);
+figure; plot(b,par.Fdhdp((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dhdp vs x')
+
+t = numPar.time;
 figure;
 plot(t,x.*1e2);
 title('Solution x(t) of IVP')
 xlabel('Time (sec)'); grid on
 ylabel('X (cm)');
+
+figure;
+plot(x,v);
+title("Phase Diagram of IVP");
+xlabel('x');ylabel('dx/dt');
+
 
 figure();
 y = par.ybar - par.sb/par.sc*x;
@@ -89,28 +68,10 @@ plot(t,y.*1e2);
 title('Solution y(t)');
 xlabel('Time (sec)');
 ylabel('Y (cm)')
+%%compute v(t)
 
 
-figure;
-plot(x,v);
-title("Phase Diagram of IVP")
-xlabel('x');ylabel('dx/dt');
-
-j=length(t);
-cj = (1/j)*fft(x.*1e2);
-
-freq = 1/(h*j).*(0:j-1);
-figure;
-L = floor(j/2); %only care about positive bc for real valued function c(-j) = c*(j)
-magcj = cj(1:L+1) .* conj(cj(1:L+1)); %compute magnitude of coefficients
-semilogx(freq(1:L+1),magcj, 'o-'); %logarithmic plot of coefficients
-xlabel('Frequency (Hz)');
-ylabel('Magnitude (|Cj|^2)');
-title(['Magnitude of Fourier Coefficients, ','steam', ' solution']);
-[maxmag,ind] = max(magcj);
-fprintf('The %s solution oscillates at a frequency of %f. \n', 'steam',freq(ind));
-
-%% compute v(t)
+figure; plot(b,par.FdPdv((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dpdv vs x')
 vt = par.sb*(par.H - par.xbar - x)/par.m;
 pt = interp1(vV,P,vt);
 xt = zeros(size(pt));
@@ -119,28 +80,13 @@ for i = 1:length(pt)
 end
 figure();
 plot(t,xt);
+%}
 
-A = [t',x'];
-writematrix(A, 'steamwrite.txt','Delimiter',' ');
-%% 
-function dxdt= xdot(t,x,v)
-    dxdt = v;
-end
+[~,locs1] = findpeaks(x);
+T=(locs1(2)-locs1(1))*numPar.h;
+nmfreq = 1/T;
+fprintf('The numerical solution oscillates at a frequency of %f. \n',nmfreq);
 
-function dvdt = vdot1(t,x,v,par)
-    %precompute coefficients to visually declutter
-    %equation 9 will look something like:  A*vdot = Bv^2 + C* O(x)
-    sbsc= par.sb ./ par.sc;
-    sbsl= par.sb ./ par.sl;
-    A = par.xbar+x+(sbsc .* (par.ybar - (sbsc*x))) + sbsl*par.L ;
-    B = (-0.5)*(1-(sbsc)^2);
-    C = -par.g * (par.xbar+x);
-    D = par.g * (par.ybar - (sbsc*x));
-    agp = par.alpha * (1- par.gamma)*(1 / par.rho);
-    vol = (1/par.m).*par.sb.*(par.H-par.xbar-x);
-    E = -(par.m/par.rho).*par.Fdhdp(vol)*par.FdPdv(vol);
-    F = -agp * par.Pa0*10^-5;
-    
-    dvdt = (1./A)*(B.*v.^2 +C+D+E+F);
-end
 
+anfreq = frequency_calculator(par);
+fprintf('The analytical frequency is %f. \n', anfreq);
