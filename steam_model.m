@@ -1,12 +1,12 @@
 format long;
 %clc;clear;
+clear;
+close all;
+
+
 addpath ./XSteam_Matlab_v2.6/;
-P=linspace(0.007,2,5000); %Range of pressure for lookup table (bar)
-vV=zeros(1,length(P));  % vapor volume (m^3/kg)
-hH = zeros(1,length(P));% enthalpy (J/kg)
-dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
-dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
-nmfreq = zeros(1,5);
+
+numerical_frequency = zeros(1,5);
 anfreq = zeros(1,5);
 par.sb = 0.0613; % cross-section of bubble trap in m^2
 par.sc = 5.07e-4;% cross-section of (1-inch) column in m^2
@@ -20,12 +20,12 @@ par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 %fill = 0.9; %fraction of chamber above lateral connector that contains water
 par.xbar = 25*1e-2; %mean water height in bubble trap in m, must be in (0,H)
-delxys = linspace(-10,10,10)*1e-2;
+delxys = linspace(0,20,5)*1e-2;
 ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
 %par.delxy = par.ybar-par.xbar;
-numPar.x0= 0.0005*1e-2; %initial displacement in m
+numPar.x0= -1e-9; %initial displacement in m
 numPar.v0= 0; %initial velocity in m/s
-numPar.h=0.001; %time step (s)
+numPar.h=0.0001; %time step (s)
 numPar.tf = 3;
 numPar.time=0: numPar.h : numPar.tf;
 numPar.j=length(numPar.time);
@@ -34,73 +34,115 @@ for k = 1:length(delxys)
     %par.xbar = xbars(k);
     par.ybar = ybars(k);
     par.delxy = delxys(k);
-%% Make a lookup table with pre-computed thermodynamic properties.
-par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
-P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
-par.m=par.Vol_0 / XSteam('vV_p', (P_0*10^(-5))); %vapor mass in kg
-s=XSteam('sV_p',(P_0*10^(-5)))*1000; %specific entropy J*kg^-1*degC^-1
-for i=1:length(P)
-    vV(i) = XSteam('v_ps',P(i),s/1e3); %specific volume in m^3*kg^-1
-    hH(i) = XSteam('h_ps',P(i),s/1e3)*1000; %enthalpy in J*kg^-1
-    delta = 1e-6;%bar
-    dh_dp(i) = (XSteam('h_ps',P(i)+delta,s/1e3)-XSteam('h_ps',P(i)-delta,s/1e3))*1000/(2*delta)/1e5;% enthalpy in mks units, pressure in Pa
-    dv_dp(i) = (XSteam('v_ps', P(i)+delta,s/1e3)-XSteam('v_ps', P(i)-delta,s/1e3))*1000/(2*delta)/1e5;
+    %% Make a lookup table with pre-computed thermodynamic properties.
+    par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
+    P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
+    par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
+    
+    xv = 1 - 1e-2;
+    sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
+    sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
+    s = xv*sv + (1-xv)*sl;
+    
+    P=linspace((P_0-1e4)/1e5,(P_0+1e4)/1e5,51); %Range of pressure for lookup table (bar)
+    vV=zeros(1,length(P));  % vapor volume (m^3/kg)
+    hH = zeros(1,length(P));% enthalpy (J/kg)
+    dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
+    dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
+    for i=1:length(P)
+        vV(i) = XSteam('v_ps',P(i),s/1e3); %specific volume in m^3*kg^-1
+        hH(i) = XSteam('h_ps',P(i),s/1e3)*1e3; %enthalpy in J*kg^-1
+        xS(i) = XSteam('x_ps',P(i),s/1e3);
+        delta = 1e-6;%bar
+        dh_dp(i) = (XSteam('h_ps',P(i)+delta,s/1e3)-XSteam('h_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
+        dv_dp(i) = (XSteam('v_ps', P(i)+delta,s/1e3)-XSteam('v_ps', P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/kg/Pa
+    end
+    
+    figure()
+    subplot(2,1,1);
+    plot(P,dh_dp);
+    xlabel('P ((bar)');
+    ylabel('dh/dP (J/Pa)');
+    subplot(2,1,2);
+    plot(P,dh_dp.*(1./dv_dp));
+    hold on
+    plot(P_0/1e5*[1 1],get(gca,'YLim'));
+    xlabel('P (bar)');
+    ylabel('dh/dv');
+    
+    [~,i] = sort(vV);
+    par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
+    par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
+    
+    [x,v] = steam_solve(par,numPar);
+    %%Plotting
+    
+    
+    t = numPar.time;
+    figure;
+    plot(t,x.*1e2);
+    title('Solution x(t) of IVP')
+    xlabel('Time (sec)'); grid on
+    ylabel('X (cm)');
+    drawnow();
+    % figure;
+    % plot(x,v);
+    % title("Phase Diagram of IVP");
+    % xlabel('x');ylabel('dx/dt');
+    %
+    %
+    % figure();
+    % y = par.ybar - par.sb/par.sc*x;
+    % plot(t,y.*1e2);
+    % title('Solution y(t)');
+    % xlabel('Time (sec)');
+    % ylabel('Y (cm)')
+    % %%compute v(t)
+    %
+    %
+    %
+    % vt = par.sb*(par.H - par.xbar - x)/par.m;
+    % pt = interp1(vV,P,vt);
+    % xt = zeros(size(pt));
+    % for i = 1:length(pt)
+    %     xt(i) = XSteam('x_ps',pt(i),s/1e3);
+    % end
+    % figure();
+    % plot(t,xt);
+    %
+    % b = linspace(5e-2,37.15e-2,100);
+    % figure; plot(b,par.FdPdv((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dpdv vs x')
+    % figure; plot(b,par.Fdhdp((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dhdp vs x')
+    %
+    
+    
+    [~,locs1] = findpeaks(x);
+    if length(locs1) > 1
+    oscillation_period=(locs1(end)-locs1(end-1))*numPar.h;
+    numerical_frequency(k) = 1./oscillation_period;
+    fprintf('The numerical solution oscillates at a frequency of %f. \n',numerical_frequency(k));
+    
+    
+    anfreq(k) = frequency_calculator(par);
+    maxfreq(k) = analytic_frequency(par)
+    fprintf('The analytical frequency is %f. \n', anfreq(k));
+    else
+        anfreq(k) = NaN;
+        maxfreq(k) = NaN;
+    end
 end
-
-[~,i] = sort(vV);
-par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
-par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
-
-[x,v] = steam_solve(par,numPar);
-%%Plotting
-
-%{
-t = numPar.time;
-figure;
-plot(t,x.*1e2);
-title('Solution x(t) of IVP')
-xlabel('Time (sec)'); grid on
-ylabel('X (cm)');
-
-figure;
-plot(x,v);
-title("Phase Diagram of IVP");
-xlabel('x');ylabel('dx/dt');
-
-
+%% post processing
 figure();
-y = par.ybar - par.sb/par.sc*x;
-plot(t,y.*1e2);
-title('Solution y(t)');
-xlabel('Time (sec)');
-ylabel('Y (cm)')
-%%compute v(t)
+plot(delxys*1e2, numerical_frequency);
+hold on
+plot(delxys*1e2,anfreq,'r--');
+plot(delxys*1e2,maxfreq,'k--')
+xlabel('ybar-xbar (cm)');
+ylabel('Oscillation frequency (hz)');
 
-
-
-vt = par.sb*(par.H - par.xbar - x)/par.m;
-pt = interp1(vV,P,vt);
-xt = zeros(size(pt));
-for i = 1:length(pt)
-    xt(i) = XSteam('x_ps',pt(i),s/1e3);
-end
+% compute and plot error.
+err = abs((anfreq-numerical_frequency)./numerical_frequency)*100;
 figure();
-plot(t,xt);
-
-b = linspace(5e-2,37.15e-2,100);
-figure; plot(b,par.FdPdv((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dpdv vs x')
-figure; plot(b,par.Fdhdp((1/par.m).*par.sb.*(par.H-par.xbar-b)));title('dhdp vs x')
-%}
-
-[~,locs1] = findpeaks(x);
-T=(locs1(2)-locs1(1))*numPar.h;
-nmfreq(k) = 1/T;
-%fprintf('The numerical solution oscillates at a frequency of %f. \n',nmfreq(k));
-
-
-anfreq(k) = frequency_calculator(par);
-%fprintf('The analytical frequency is %f. \n', anfreq(k));
-end
-figure;plot(delxys*1e2, nmfreq,delxys*1e2,anfreq);
-err = abs((anfreq-nmfreq)./nmfreq)*100;
-figure;plot(delxys*1e2,err);
+plot(delxys*1e2,err);
+xlabel('ybar-xbar (m)');
+ylabel('error (-)');
