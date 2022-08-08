@@ -34,4 +34,3 @@ for i=1:numPar.j-1
     v(i+1) = v(i) + (h/6)*(k1v+2*k2v+2*k3v+k4v);
 end
 end
-
