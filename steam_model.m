@@ -5,31 +5,46 @@ close all;
 
 
 addpath ./XSteam_Matlab_v2.6/;
+reps = 5; %number of delta values to solve for
+numerical_frequency = zeros(1,reps);
+anfreq = zeros(1,reps);
+fill = 0.9; %fraction of chamber above lateral connector that contains water
+geom = input('Enter a number: \n [0] Lab Geyser \n [1] Old Faithful \n');
+switch geom
+    case 0
+        fprintf('Using laboratory dimensions. \n');
+        par.sb = 0.0613; % cross-section of bubble trap in m^2
+        par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2
+        par.sl = 7.92e-4; %cross-section of lateral connector in m^2
+        par.L = 7.37e-2; % length of lateral connector in m
+        par.H = 37.15e-2; % height of bubble trap in m
+        par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
+        delxys = linspace(0,20,reps)*1e-2;
+        numPar.x0= par.sc/par.sb*1e-2; %initial displacement in m
+    case 1
+        fprintf('Using Old Faithful''s dimensions. \n ')
+        par.sb = 80; % cross-section of bubble trap in m^2
+        par.sc = 1; % cross-section of geyser column in m^2
+        par.H = 7; % height of bubble trap in m
+        par.L = 2; % length of lateral connector in m
+        par.sl = 7; %cross-section of lateral connector in m^2
+        par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
+        numPar.x0= -par.sc/par.sb; %initial displacement in m
+        delxys = linspace(0,par.H-par.xbar,reps);
+end
 
-numerical_frequency = zeros(1,5);
-anfreq = zeros(1,5);
-par.sb = 0.0613; % cross-section of bubble trap in m^2
-par.sc = 5.07e-4;% cross-section of (1-inch) column in m^2
-par.sl = 7.92e-4; %cross-section of lateral connector in m^2
-par.L = 7.37e-2; % length of lateral connector in m
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
-par.H = 37.15e-2; % height of bubble trap in m
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
-%fill = 0.9; %fraction of chamber above lateral connector that contains water
-par.xbar = 25*1e-2; %mean water height in bubble trap in m, must be in (0,H)
-delxys = linspace(0,20,5)*1e-2;
 ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
 %par.delxy = par.ybar-par.xbar;
-numPar.x0= -par.sc/par.sb*1e-2; %initial displacement in m
 numPar.v0= 0; %initial velocity in m/s
 numPar.h=0.0001; %time step (s)
 numPar.tf = 3;
 numPar.time=0: numPar.h : numPar.tf;
 numPar.j=length(numPar.time);
-
 for k = 1:length(delxys)
     %par.xbar = xbars(k);
     par.ybar = ybars(k);
@@ -57,7 +72,7 @@ for k = 1:length(delxys)
         dh_dp(i) = (XSteam('h_ps',P(i)+delta,s/1e3)-XSteam('h_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
         dv_dp(i) = (XSteam('v_ps', P(i)+delta,s/1e3)-XSteam('v_ps', P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/kg/Pa
     end
-    
+    %{
     figure()
     subplot(2,1,1);
     plot(P,dh_dp);
@@ -69,18 +84,16 @@ for k = 1:length(delxys)
     plot(P_0/1e5*[1 1],get(gca,'YLim'));
     xlabel('P (bar)');
     ylabel('dh/dv');
-    
+    %}
     [~,i] = sort(vV);
     par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
     par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
     
-    [x,v] = steam_solve(par,numPar);
+    [t1,x1,v1] = solve_15s(par,numPar);
+    [x2,v2] = steam_solve(par,numPar);
     %%Plotting
-    
-    
-    t = numPar.time;
     figure;
-    plot(t,x.*1e2);
+    plot(t1,x1.*1e2,numPar.time,x2*1e2);
     title('Solution x(t) of IVP')
     xlabel('Time (sec)'); grid on
     ylabel('X (cm)');
@@ -116,21 +129,23 @@ for k = 1:length(delxys)
     %
     
     
-    [~,locs1] = findpeaks(x);
+    [~,locs1] = findpeaks(x1);
     if length(locs1) > 1
-    oscillation_period=(locs1(end)-locs1(end-1))*numPar.h;
+    oscillation_period=t1(locs1(end))-t1(locs1(end-1));
     numerical_frequency(k) = 1./oscillation_period;
     fprintf('The numerical solution oscillates at a frequency of %f. \n',numerical_frequency(k));
     
     
     anfreq(k) = frequency_calculator(par);
-    maxfreq(k) = analytic_frequency(par)
-    fprintf('The analytical frequency is %f. \n', anfreq(k));
+    maxfreq(k) = analytic_frequency(par);
+    fprintf(['Uthkarsh''s analytical frequency is %f. \n' ...
+        'Max''s analytical frequency is %f. \n'], anfreq(k), maxfreq(k));
     else
         anfreq(k) = NaN;
         maxfreq(k) = NaN;
     end
 end
+hold off;
 %% post processing
 figure();
 plot(delxys*1e2, numerical_frequency);
@@ -141,8 +156,8 @@ xlabel('ybar-xbar (cm)');
 ylabel('Oscillation frequency (hz)');
 
 % compute and plot error.
-err = abs((anfreq-numerical_frequency)./numerical_frequency)*100;
+err = abs((maxfreq-numerical_frequency)./numerical_frequency)*100;
 figure();
 plot(delxys*1e2,err);
 xlabel('ybar-xbar (m)');
-ylabel('error (-)');
+ylabel('Percent Error (%)');
