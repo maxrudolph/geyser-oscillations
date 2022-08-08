@@ -16,7 +16,7 @@ op=odeset('RelTol',1e-8,'AbsTol',1e-10);
 %%Solving EOM
 %pass parameters into vdot equation easily
 
-vdot = @(t,z) dot(t,z,par);
+vdot = @(t,z) steam_RHS(t,z,par);
 [ts,ys] = ode15s(vdot,t,z0,op);
 xs = ys(:,1);vs = ys(:,2);
 

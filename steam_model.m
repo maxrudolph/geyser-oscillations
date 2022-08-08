@@ -1,8 +1,6 @@
 format long;
-%clc;clear;
-clear;
+clc;clear;
 close all;
-
 
 addpath ./XSteam_Matlab_v2.6/;
 reps = 5; %number of delta values to solve for
@@ -41,7 +39,7 @@ par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
 %par.delxy = par.ybar-par.xbar;
 numPar.v0= 0; %initial velocity in m/s
-numPar.h=0.0001; %time step (s)
+numPar.h=0.00025; %time step (s)
 numPar.tf = 3;
 numPar.time=0: numPar.h : numPar.tf;
 numPar.j=length(numPar.time);
@@ -90,10 +88,10 @@ for k = 1:length(delxys)
     par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
     
     [t1,x1,v1] = solve_15s(par,numPar);
-    [x2,v2] = steam_solve(par,numPar);
+    %[x2,v2] = steam_solve(par,numPar);
     %%Plotting
     figure;
-    plot(t1,x1.*1e2,numPar.time,x2*1e2);
+    plot(t1,x1.*1e2);%numPar.time,x2*1e2);
     title('Solution x(t) of IVP')
     xlabel('Time (sec)'); grid on
     ylabel('X (cm)');
