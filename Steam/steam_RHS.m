@@ -16,7 +16,6 @@ agp = par.alpha * (1- par.gamma)*(1 / par.rho);
 vol = par.sb*(par.H-par.xbar-x);
 assert(vol>0); % assert that the bubble trap volume is positive
 
-
 E = (1/par.rho).*par.Fdhdp(vol)*par.FdPdv(vol);
 F = -agp * par.Pa0;
 
