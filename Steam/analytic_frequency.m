@@ -4,10 +4,10 @@ sb_sl= par.sb ./ par.sl;
 
 % define f(x) = dH/dP * -V*dP/dV
 % f(0)/(H-xbar) + (f'(0)/(H-xbar) + f(0)/(H-xbar)^2)*x
-tmp1 = par.Fdhdp(par.Vol_0/par.m) * -par.Vol_0*par.FdPdv(par.Vol_0/par.m);
+tmp1 = par.Fdhdp(par.Vol_0) * -par.Vol_0*par.FdPdv(par.Vol_0);
 delta = 1e-9;
-fplus  = par.Fdhdp((par.Vol_0-par.sb*delta)/par.m) * -(par.Vol_0-par.sb*delta)*par.FdPdv((par.Vol_0-par.sb*delta)/par.m);
-fminus = par.Fdhdp((par.Vol_0+par.sb*delta)/par.m) * -(par.Vol_0+par.sb*delta)*par.FdPdv((par.Vol_0+par.sb*delta)/par.m);
+fplus  = par.Fdhdp((par.Vol_0-par.sb*delta)) * -(par.Vol_0-par.sb*delta)*par.FdPdv((par.Vol_0-par.sb*delta));
+fminus = par.Fdhdp((par.Vol_0+par.sb*delta)) * -(par.Vol_0+par.sb*delta)*par.FdPdv((par.Vol_0+par.sb*delta));
 dfdx = (fplus-fminus)/(2*delta);
 tmp2 = dfdx/(par.H-par.xbar) - tmp1/(par.H-par.xbar)^2;
 

@@ -8,7 +8,7 @@ numerical_frequency = zeros(1,reps);
 anfreq = zeros(1,reps);
 maxfreq = zeros(1,reps);
 fill = 0.9; %fraction of chamber above lateral connector that contains water
-geom = input('Enter a number: \n [0] Lab Geyser \n [1] Old Faithful \n');
+geom=0;
 switch geom
     case 0
         fprintf('Using laboratory dimensions. \n');
@@ -19,7 +19,7 @@ switch geom
         par.H = 37.15e-2; % height of bubble trap in m
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
         delxys = linspace(0,par.H-par.xbar,reps);
-        numPar.x0= par.sc/par.sb*1e-2; %initial displacement in m
+        numPar.x0= -1e-9; %initial displacement in m
     case 1
         fprintf('Using Old Faithful''s dimensions. \n ')
         par.sb = 80; % cross-section of bubble trap in m^2
@@ -54,18 +54,18 @@ for k = 1:length(delxys)
     P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
     par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
     
-    xv = 1 - 1e-2;
+    xv = 1 - 1e-1;
     sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
     sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
     s = xv*sv + (1-xv)*sl;
     
     P=linspace((P_0-1e4)/1e5,(P_0+1e4)/1e5,51); %Range of pressure for lookup table (bar)
-    vV=zeros(1,length(P));  % vapor volume (m^3/kg)
+    vV=zeros(1,length(P));  % vapor volume (m^3)
     hH = zeros(1,length(P));% enthalpy (J/kg)
     dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
     dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
     for i=1:length(P)
-        vV(i) = XSteam('v_ps',P(i),s/1e3); %specific volume in m^3*kg^-1
+        vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
         hH(i) = XSteam('h_ps',P(i),s/1e3)*1e3; %enthalpy in J*kg^-1
         xS(i) = XSteam('x_ps',P(i),s/1e3);
         delta = 1e-6;%bar
@@ -86,8 +86,8 @@ for k = 1:length(delxys)
     ylabel('dh/dv');
     %}
     [~,i] = sort(vV);
-    par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i));
-    par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i));
+    par.Fdhdp = griddedInterpolant(vV(i),dh_dp(i),'linear','none');
+    par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i),'linear','none');
     
     [t1,x1,v1] = solve_15s(0,par,numPar);
     [x2,v2] = steam_solve(par,numPar);
