@@ -20,7 +20,7 @@ z0= [numPar.x0;numPar.v0];
 op=odeset('RelTol',1e-10,'AbsTol',1e-12);
 %%Solving EOM
 %pass parameters into vdot equation easily
-[ts,ys] = ode15s(vdot,t,z0,op);
+[ts,ys] = ode45(vdot,t,z0,op);
 xs = ys(:,1);vs = ys(:,2);
 
 end

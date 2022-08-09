@@ -1,5 +1,5 @@
 format long;
-clc;clear;
+clear;
 close all;
 
 addpath ../XSteam_Matlab_v2.6/;
@@ -19,7 +19,7 @@ switch geom
         par.H = 37.15e-2; % height of bubble trap in m
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
         delxys = linspace(0,par.H-par.xbar,reps);
-        numPar.x0= -1e-9; %initial displacement in m
+        numPar.x0= 1e-9*0; %initial displacement in m
     case 1
         fprintf('Using Old Faithful''s dimensions. \n ')
         par.sb = 80; % cross-section of bubble trap in m^2
@@ -54,12 +54,14 @@ for k = 1:length(delxys)
     P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
     par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
     
-    xv = 1 - 1e-1;
+    xv = 1 - 1e-2;
     sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
     sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
-    s = xv*sv + (1-xv)*sl;
+    s = xv*sv + (1-xv)*sl; % gives specific entropy of water+vapor mixture in J/kg/C
+    V0 = XSteam('V_ps',P_0/1e5,s/1e3); % volume per unit mass
+    par.m = par.Vol_0 / V0;
     
-    P=linspace((P_0-1e4)/1e5,(P_0+1e4)/1e5,51); %Range of pressure for lookup table (bar)
+    P=linspace((P_0-9e4)/1e5,(P_0+9e4)/1e5,51); %Range of pressure for lookup table (bar)
     vV=zeros(1,length(P));  % vapor volume (m^3)
     hH = zeros(1,length(P));% enthalpy (J/kg)
     dh_dp = zeros(1,length(P)); %dH/dP in (kJ/K/Pa)
@@ -68,9 +70,10 @@ for k = 1:length(delxys)
         vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
         hH(i) = XSteam('h_ps',P(i),s/1e3)*1e3; %enthalpy in J*kg^-1
         xS(i) = XSteam('x_ps',P(i),s/1e3);
+        T(i) = XSteam('T_ps',P(i),s/1e3); % temperature in degree C
         delta = 1e-6;%bar
         dh_dp(i) = (XSteam('h_ps',P(i)+delta,s/1e3)-XSteam('h_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
-        dv_dp(i) = (XSteam('v_ps', P(i)+delta,s/1e3)-XSteam('v_ps', P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/kg/Pa
+        dv_dp(i) = (XSteam('v_ps',P(i)+delta,s/1e3)-XSteam('v_ps',P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/Pa
     end
     %{
     figure()
@@ -93,10 +96,10 @@ for k = 1:length(delxys)
     [x2,v2] = steam_solve(par,numPar);
     %%Plotting
     %figure;
-    plot(t1,x1.*1e2);%numPar.time,x2*1e2);
-    title('Solution x(t) of IVP')
+    plot(t1,x1);%numPar.time,x2*1e2);
+    title('Solution x(t) of IVP (m)')
     xlabel('Time (sec)'); grid on
-    ylabel('X (cm)');hold on;
+    ylabel('X (m)');hold on;
     %drawnow();
     % figure;
     % plot(x,v);
