@@ -4,7 +4,7 @@ close all;
 
 addpath ../XSteam_Matlab_v2.6/;
 addpath ..;
-reps = 11; %number of delta values to solve for
+reps = 15; %number of delta values to solve for
 numerical_frequency = zeros(1,reps);
 anfreq = zeros(1,reps);
 maxfreq = zeros(1,reps);
@@ -40,12 +40,10 @@ par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
 numPar.v0= 0; %initial velocity in m/s
-numPar.h=0.00025; %time step (s)
 numPar.tf = 5;
-numPar.time=0: numPar.h : numPar.tf;
-numPar.j=length(numPar.time);
 figure;
-for k = 1:length(delxys)
+
+for k = 1:reps
     par.ybar = ybars(k);
     par.delxy = delxys(k);
     %% Make a lookup table with pre-computed thermodynamic properties.
@@ -60,7 +58,7 @@ for k = 1:length(delxys)
     V0 = XSteam('V_ps',P_0/1e5,s/1e3); % volume per unit mass
     par.m = par.Vol_0 / V0;
 
-    P=linspace((P_0-9e4)/1e5,(P_0+9e4)/1e5,51); %Range of pressure for lookup table (bar)
+    P=linspace((P_0-9e4)/1e5,(P_0+9e4)/1e5,101); %Range of pressure for lookup table (bar)
     vV=zeros(1,length(P));  % vapor volume (m^3)
     du_dp = zeros(1,length(P)); %dU/dP in (kJ/K/Pa)
     dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
