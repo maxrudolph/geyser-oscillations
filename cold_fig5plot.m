@@ -2,19 +2,19 @@ format long;
 clear;
 close all;
 
-addpath XSteam_Matlab_v2.6\;
-addpath Ideal_Gas\;
-addpath Steam\
+addpath XSteam_Matlab_v2.6;
+addpath Ideal_Gas;
+addpath Steam;
 opts = detectImportOptions('cold-water-freq-filtered.csv');
 opts.SelectedVariableNames = [1,2,8,14];
 expdata = readmatrix('cold-water-freq-filtered.csv',opts);
 
 fprintf('Using new lab dimensions. \n')
 par.sb = 1928e-4;
-par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2
-par.sl = 1; %cross-section of lateral connector in m^2
-par.L = 0; % length of lateral connector
-par.H = 74.7e-2;
+par.sc = 5.07e-4;   % cross-section of (1-inch) column in m^2
+par.sl = 1;         %cross-section of lateral connector in m^2
+par.L = 0;          % length of lateral connector (m)
+par.H = 74.7e-2;    %height of bubble trap (m)
 xbars = linspace(0, 74.25,101)*1e-2;
 exp_xbar = expdata(:,1)*1e-2;
 exp_ybar = expdata(:,2)*1e-2+par.H;
@@ -53,6 +53,8 @@ for j =1:length(delxys)
     end
 end
 exp_err = expdata(:,4)*2*pi;
+
+% make a plot showing predicted frequencies
 figure;
 exp_frequencies = expdata(:,3)/(2*pi);
 plot(xbars*1e2,numfrequencies, 'MarkerSize',15); hold on
@@ -67,16 +69,18 @@ legend('y-x=40.2 cm','y-x=61.3 cm','y-x=35.1 cm','y-x=36.7 cm','y-x=27.2 cm','y-
 ylim([-0.1,1])
 xlim([0,par.H*1e2])
 
+%% plot of predicted vs. observed frequencies
 figure;
 p2=errorbar(labfrequencies(1,:), exp_frequencies,exp_err,exp_err,propagated_errors(1,:),propagated_errors(1,:),'.'); hold on
 p2(1).MarkerSize = 15;
-delxyrange=ceil(max(delxys*1e2)) + 1;
-cmap =delxyrange;
-pos_station = [0 0];
-c = sqrt((labfrequencies(1,:)-pos_station(1)).^2 + (exp_frequencies-pos_station(2)).^2);
-c = (c-min(c))/(max(c)-min(c))*delxyrange;  % map to 360 colors
-scatter(labfrequencies(1,:),exp_frequencies,[],c, 'filled');
-colormap(jet(cmap));
+
+cmap = colormap('jet'); % retrieve the jet colormap
+% map delxy onto colors
+color_variable = delxys*100;
+colors = interp1(linspace(min(color_variable),max(color_variable),length(cmap)),cmap,color_variable);
+caxis([min(color_variable) max(color_variable)])
+
+scatter(labfrequencies(1,:),exp_frequencies,[],colors, 'filled');
 a=colorbar();
 ylabel(a, '$\overline y$ - $\overline x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
 xave=linspace(0.4,0.7,51); plot(xave,xave,'--');
