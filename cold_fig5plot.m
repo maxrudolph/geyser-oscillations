@@ -5,7 +5,12 @@ close all;
 addpath XSteam_Matlab_v2.6\;
 addpath Ideal_Gas\;
 addpath Steam\
-filename='cold-water-freq-2in-filtered.csv';
+conduit_diamter = 2; % 1 -> 1 inch, 2 -> 2 inches
+if conduit_diamter == 1
+    filename='cold-water-freq-filtered.csv';
+elseif conduit_diamter ==2
+    filename='cold-water-freq-2in-filtered.csv';
+end
 opts = detectImportOptions(filename);
 opts.SelectedVariableNames = [1,2,8,14];
 %opts.DataLines = 29;
@@ -17,7 +22,7 @@ par.sl = 1; %cross-section of lateral connector in m^2
 par.L = 0; % length of lateral connector
 par.H = 74.7e-2;
 xbars = linspace(0, 74.25,length(expdata))*1e-2;
-correction = 2.5e-2;
+correction = 0e-2;
 if strcmp(filename,'cold-water-freq-2in-filtered.csv')
     par.sc = 20.25802e-4; % cross-section of (2-inch) column in m^2
     exp_xbar = expdata(1:8,1)*1e-2;
