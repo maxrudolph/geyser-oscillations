@@ -4,11 +4,11 @@ close all;
 
 addpath ./XSteam_Matlab_v2.6/;
 addpath ..;
-reps = 15; %number of delta values to solve for
+reps = 3; %number of delta values to solve for
 numerical_frequency = zeros(1,reps);
 anfreq = zeros(1,reps);
 maxfreq = zeros(1,reps);
-fill = 0.85; %fraction of chamber above lateral connector that contains water
+fill = 0.9; %fraction of chamber above lateral connector that contains water
 geom=0;
 switch geom
     case 0
@@ -20,7 +20,7 @@ switch geom
         par.H = 74.7e-2; % height of bubble trap in m
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
         delxys = linspace(0,par.H-par.xbar,reps);
-        numPar.x0= 1e-7; %initial displacement in m
+        x0= [5e-4,1e-3,2e-3]; %initial displacement in m
     case 1
         fprintf('Using Old Faithful''s dimensions. \n ')
         par.sb = 80; % cross-section of bubble trap in m^2
@@ -45,7 +45,8 @@ figure;
 
 for k = 1:reps
     par.ybar = ybars(k);
-    par.delxy = delxys(k);
+    par.delxy = delxys(1);
+    numPar.x0 = x0(k);
     %% Make a lookup table with pre-computed thermodynamic properties.
     par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
     P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
@@ -134,28 +135,28 @@ for k = 1:reps
 end
 hold off;
 %% post processing
-figure();
-plot(delxys*1e2, numerical_frequency);
-hold on
-plot(delxys*1e2,anfreq,'r--');
-xlabel('ybar-xbar (cm)');
-ylabel('Oscillation frequency (Hz)');
-title('Comparison of Numerical and Analytical Frequencies')
-legend('Numerical','Analytical')
+% figure();
+% plot(delxys*1e2, numerical_frequency);
+% hold on
+% plot(delxys*1e2,anfreq,'r--');
+% xlabel('ybar-xbar (cm)');
+% ylabel('Oscillation frequency (Hz)');
+% title('Comparison of Numerical and Analytical Frequencies')
+% legend('Numerical','Analytical')
 
 % compute and plot error.
-err = ((anfreq-numerical_frequency)./numerical_frequency)*100;
-figure();
-plot(delxys*1e2,err);
-xlabel('ybar-xbar (m)');
-ylabel('Percent Error (%)');
-figure;
-reference= linspace(min(anfreq)-0.01,max(anfreq)+0.01,3);
-plot(reference,reference,'-');hold on;
-plot(numerical_frequency,anfreq, '.', 'MarkerSize', 15);  hold off;
-xlabel('Numerical Frequency (Hz)');
-ylabel('Analytical Frequency (Hz)');
-title('Comparison of Numerical and Analytical Frequencies');
+% err = ((anfreq-numerical_frequency)./numerical_frequency)*100;
+% figure();
+% plot(delxys*1e2,err);
+% xlabel('ybar-xbar (m)');
+% ylabel('Percent Error (%)');
+% figure;
+% reference= linspace(min(anfreq)-0.01,max(anfreq)+0.01,3);
+% plot(reference,reference,'-');hold on;
+% plot(numerical_frequency,anfreq, '.', 'MarkerSize', 15);  hold off;
+% xlabel('Numerical Frequency (Hz)');
+% ylabel('Analytical Frequency (Hz)');
+% title('Comparison of Numerical and Analytical Frequencies');
 figure()
 % subplot(2,1,1);
 plot(T,P*1e2);
@@ -164,6 +165,7 @@ ylim([0.8 2]*1e2)
 xlabel('Temperature (Celsius)');
 ylabel('Pressure (kPa)');
 set(gca,'Ydir','reverse')
+title('Water Phase Diagram')
 % subplot(2,1,2);
 % plot(P,du_dp.*(1./dv_dp));
 % hold on
