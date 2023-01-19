@@ -11,7 +11,7 @@ par.sl = 1; %cross-section of lateral connector in m^2
 par.L = 0; % length of lateral connector
 par.H = 74.7e-2;
 xbars = linspace(0,73.5,101)*1e-2;
-delxys = [44.6]*1e-2;
+delxys = [0,11.2,22.3,33.5,44.6,55.8,67]*1e-2;
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
@@ -34,7 +34,7 @@ for j =1:length(delxys)
         P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
         par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
 
-        xv = 1 - 1e-2;
+        xv = 1 - 1e-1;
         sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
         sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
         s = xv*sv + (1-xv)*sl; % gives specific entropy of water+vapor mixture in J/kg/C
@@ -70,7 +70,7 @@ xlabel('x-bar (cm)')
 ylabel('Frequency (Hz)')
 IG_approximation_error = abs((Steam_frequencies-IG_frequencies)./IG_frequencies)*100;
 figure;
-plot(xbars*1e2, IG_approximation_error)
+plot((xbars/par.H)*1e2, IG_approximation_error)
 title('Steam vs Ideal Gas Frequencies')
 xlabel('xbar (cm)');
 ylabel('Percent Difference (%)');
