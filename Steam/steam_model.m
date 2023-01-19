@@ -2,31 +2,31 @@ format long;
 clear;
 close all;
 
-addpath ../XSteam_Matlab_v2.6/;
+addpath ./XSteam_Matlab_v2.6/;
 addpath ..;
 reps = 15; %number of delta values to solve for
 numerical_frequency = zeros(1,reps);
 anfreq = zeros(1,reps);
 maxfreq = zeros(1,reps);
-fill = 0.5; %fraction of chamber above lateral connector that contains water
+fill = 0.85; %fraction of chamber above lateral connector that contains water
 geom=0;
 switch geom
     case 0
         fprintf('Using laboratory dimensions. \n');
-        par.sb = 613e-4; % cross-section of bubble trap in m^2
+        par.sb = 1852e-4; % cross-section of bubble trap in m^2
         par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2
-        par.sl = 7.92e-4; %cross-section of lateral connector in m^2
-        par.L = 7.37e-2; % length of lateral connector in m
-        par.H = 37.15e-2; % height of bubble trap in m
+        par.sl = 1; %cross-section of lateral connector in m^2
+        par.L = 0; % length of lateral connector in m
+        par.H = 74.7e-2; % height of bubble trap in m
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
         delxys = linspace(0,par.H-par.xbar,reps);
-        numPar.x0= 1e-4; %initial displacement in m
+        numPar.x0= 1e-7; %initial displacement in m
     case 1
         fprintf('Using Old Faithful''s dimensions. \n ')
         par.sb = 80; % cross-section of bubble trap in m^2
         par.sc = 1; % cross-section of geyser column in m^2
         par.H = 7; % height of bubble trap in m
-        par.L = 2; % length of lateral connector in m
+        par.L = 15; % length of lateral connector in m
         par.sl = 7; %cross-section of lateral connector in m^2
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
         numPar.x0= -par.sc/par.sb; %initial displacement in m
@@ -58,7 +58,7 @@ for k = 1:reps
     V0 = XSteam('V_ps',P_0/1e5,s/1e3); % volume per unit mass
     par.m = par.Vol_0 / V0;
 
-    P=linspace((P_0-9e4)/1e5,(P_0+9e4)/1e5,101); %Range of pressure for lookup table (bar)
+    P=linspace((P_0-9e4)/1e5,(P_0+1e5)/1e5,101); %Range of pressure for lookup table (bar)
     vV=zeros(1,length(P));  % vapor volume (m^3)
     du_dp = zeros(1,length(P)); %dU/dP in (kJ/K/Pa)
     dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
@@ -67,23 +67,13 @@ for k = 1:reps
     for i=1:length(P)
         vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
         xS(i) = XSteam('x_ps',P(i),s/1e3); %vapor fraction (unitless)
-        T(i) = XSteam('T_ps',P(i),s/1e3); % temperature in degree C
+        T(i) = XSteam('Tsat_p',P(i)); % temperature in degree C
         delta = 1e-6;%bar
         du_dp(i) = (XSteam('u_ps',P(i)+delta,s/1e3)-XSteam('u_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
         dv_dp(i) = (XSteam('v_ps',P(i)+delta,s/1e3)-XSteam('v_ps',P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/Pa
     end
 
-    %     figure()
-    %     subplot(2,1,1);
-    %     plot(P,du_dp);
-    %     xlabel('P ((bar)');
-    %     ylabel('dh/dP (J/Pa)');
-    %     subplot(2,1,2);
-    %     plot(P,du_dp.*(1./dv_dp));
-    %     hold on
-    %     plot(P_0/1e5*[1 1],get(gca,'YLim'));
-    %     xlabel('P (bar)');
-    %     ylabel('dh/dv');
+
     [~,i] = sort(vV);
     par.Fdudp = griddedInterpolant(vV(i),du_dp(i),'linear','none');
     par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i),'linear','none');
@@ -91,15 +81,17 @@ for k = 1:reps
     [t1,x1,v1] = solve_15s(0,par,numPar);
 
     %Plotting
+    %set(gca,'BackgroundColor,','None')
     plot(t1,x1);
     title('Solution x(t) of IVP (m)')
     xlabel('Time (sec)'); grid on
     ylabel('X (m)');hold on;
+    fontsize(gcf,24,"points");
 
-    %figure();
-    %plot(x1,v1);
-    %title("Phase Diagram of IVP");
-    %xlabel('x');ylabel('dx/dt');
+%     figure();
+%     plot(x1,v1);
+%     title("Phase Diagram of IVP");
+%     xlabel('x');ylabel('dx/dt');
     %drawnow();
 
     %figure();
@@ -149,11 +141,32 @@ plot(delxys*1e2,anfreq,'r--');
 xlabel('ybar-xbar (cm)');
 ylabel('Oscillation frequency (Hz)');
 title('Comparison of Numerical and Analytical Frequencies')
-legend('Numerical','Uth Freq')
+legend('Numerical','Analytical')
 
 % compute and plot error.
-err = abs((anfreq-numerical_frequency)./numerical_frequency)*100;
+err = ((anfreq-numerical_frequency)./numerical_frequency)*100;
 figure();
 plot(delxys*1e2,err);
 xlabel('ybar-xbar (m)');
 ylabel('Percent Error (%)');
+figure;
+reference= linspace(min(anfreq)-0.01,max(anfreq)+0.01,3);
+plot(reference,reference,'-');hold on;
+plot(numerical_frequency,anfreq, '.', 'MarkerSize', 15);  hold off;
+xlabel('Numerical Frequency (Hz)');
+ylabel('Analytical Frequency (Hz)');
+title('Comparison of Numerical and Analytical Frequencies');
+figure()
+% subplot(2,1,1);
+plot(T,P*1e2);
+xlim([95 120])
+ylim([0.8 2]*1e2)
+xlabel('Temperature (Celsius)');
+ylabel('Pressure (kPa)');
+set(gca,'Ydir','reverse')
+% subplot(2,1,2);
+% plot(P,du_dp.*(1./dv_dp));
+% hold on
+% plot(P_0/1e5*[1 1],get(gca,'YLim'));
+% xlabel('P (bar)');
+% ylabel('dh/dv');
