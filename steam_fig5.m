@@ -1,6 +1,6 @@
 format long;
 clear;
-close all;
+%close all;
 
 addpath XSteam_Matlab_v2.6\;
 addpath Ideal_Gas\;
@@ -16,16 +16,29 @@ switch geometry
         par.H = 37.15e-2; % height of bubble trap in m
     case 1
         fprintf('Using new lab dimensions. \n')
-        par.sb = 2026.83e-4;
+        par.sb = 1852e-4;
         par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2
         par.sl = 1; %cross-section of lateral connector in m^2
         par.L = 0; % length of lateral connector
         par.H = 74.7e-2;
 end
+conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
+if conduit_diameter == 1
+    filename='hot-water-freq-filtered-1in.csv';
+elseif conduit_diameter ==2
+    filename='hot-water-freq-2in-filtered.csv';
+end
+opts = detectImportOptions(filename);
+opts.SelectedVariableNames = [1,2,5,7];
+expdata = readmatrix(filename,opts);
+
 xbars = linspace(0, 74.25,101)*1e-2;
-labxbars = [38,51,51,51,60,66]*1e-2;
-labybars = [3.5,37.6,11.4,13,12.5,41]*1e-2 + par.H;
-delxys = [40.2,61.3,35.1,36.7,27.2,49.7]*1e-2;
+%labxbars = [38,51,51,51,60,66]*1e-2;
+labxbars = (expdata(:,1))*1e-2;
+labybars = (expdata(:,2))*1e-2;
+delxys = labybars-labxbars;
+%labybars = [3.5,37.6,11.4,13,12.5,41]*1e-2 + par.H;
+%delxys = [40.2,61.3,35.1,36.7,27.2,49.7]*1e-2;
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
@@ -80,10 +93,13 @@ for j =1:length(delxys)
             propagated_errors(j,k-length(xbars)) = propagation(par,1);
         end
     end
+    fprintf('Using %d out of 36 \n',j);
 end
-err = [0.0003075117811,0.0006765997287,0.0003365434388,0.000366547911,0.0005258494879,0.0004347155603]*2*pi;
+%err = [0.0003075117811,0.0006765997287,0.0003365434388,0.000366547911,0.0005258494879,0.0004347155603]*2*pi;
+err = expdata(:,4)/2;
 figure;
-exp_frequencies = [3.82,3.19,3.69,3.64,3.75,3.27]/(2*pi);
+exp_frequencies = expdata(:,3)/(2*pi);
+%exp_frequencies = [3.82,3.19,3.69,3.64,3.75,3.27]/(2*pi);
 plot(xbars*1e2,numfrequencies, 'MarkerSize',15); hold on
 for l=1:6
     errorbar(labxbars(l)*1e2,exp_frequencies(l),propagated_errors(l,l), '.', 'MarkerSize', 15);
@@ -108,7 +124,7 @@ caxis([min(color_variable) max(color_variable)])
 scatter(labfrequencies(1,:),exp_frequencies,[],colors, 'filled');
 a=colorbar();
 ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
-xave=linspace(0.4,0.65,51); plot(xave,xave,'--');
+xave=linspace(0.45,0.7,51); plot(xave,xave,'--');
 xlabel('Predicted Frequency (Hz)','fontsize',14,'interpreter','latex')
 ylabel('Observed Frequency (Hz)','fontsize',14,'interpreter','latex')
 title('Predicted vs Observed Frequency','fontsize',14,'interpreter','latex')
