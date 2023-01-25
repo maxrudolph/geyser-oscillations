@@ -107,9 +107,10 @@ caxis([min(color_variable) max(color_variable)])
 
 scatter(labfrequencies(1,:),exp_frequencies,[],colors, 'filled');
 a=colorbar();
-ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
+% ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
 xave=linspace(0.4,0.65,51); plot(xave,xave,'--');
-xlabel('Predicted Frequency (Hz)','fontsize',14,'interpreter','latex')
-ylabel('Observed Frequency (Hz)','fontsize',14,'interpreter','latex')
-title('Predicted vs Observed Frequency','fontsize',14,'interpreter','latex')
+set(gca,'FontSize',14);
+xlabel('Predicted Frequency (Hz)','fontsize',14)%)%,14,'interpreter','latex')
+ylabel('Observed Frequency (Hz)','fontsize',14)%'interpreter','latex')
+title('Predicted vs Observed Frequency','fontsize',14)%'interpreter','latex')
 hold off
