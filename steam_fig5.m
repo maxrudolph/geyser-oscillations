@@ -1,6 +1,6 @@
 format long;
 clear;
-close all;
+%close all;
 
 addpath XSteam_Matlab_v2.6\;
 addpath Ideal_Gas\;
@@ -16,25 +16,57 @@ switch geometry
         par.H = 37.15e-2; % height of bubble trap in m
     case 1
         fprintf('Using new lab dimensions. \n')
-        par.sb = 2026.83e-4;
-        par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2
+        par.sb = 1852e-4;
+        %par.sc = 5.07e-4; % cross-section of (1-inch) column in m^2        
         par.sl = 1; %cross-section of lateral connector in m^2
         par.L = 0; % length of lateral connector
-        par.H = 74.7e-2;
+        %par.H = 74.7e-2;
+%         par.H = 0.76;
+
+        %par.H = 51.6/100;
 end
+conduit_diameter = 2; % 1 -> 1 inch, 2 -> 2 inches
+if conduit_diameter == 1
+    filename='hot-water-freq-filtered-1in_short.csv';
+    par.sc = pi*(1/2*2.54/100)^2;
+    par.H = 0.318; % "new" short 1 inch pickup
+    % par.H = 0.58 % old, longer 1 inch pickup
+elseif conduit_diameter ==2
+    filename='hot-water-freq-filtered-2in_v3.csv';
+    par.sc = pi*(2/2*2.54/100)^2;
+    % pickup tube is 53.0 below the coupler plate
+    % top plate and gasket are 1.8 cm total
+    par.H = (0.53-0.018); %height of bubble trap measured UP from base of conduit
+end
+% Load the csv file:
+opts = detectImportOptions(filename);
+opts.SelectedVariableNames = [1,2,5,7];
+expdata = readmatrix(filename,opts);
+
+% These xbar values are used for plotting predictions:
+% x and y are measured UP from the bottom of the inlet tube...
+%
+
 xbars = linspace(0, 74.25,101)*1e-2;
-labxbars = [38,51,51,51,60,66]*1e-2;
-labybars = [3.5,37.6,11.4,13,12.5,41]*1e-2 + par.H;
-delxys = [40.2,61.3,35.1,36.7,27.2,49.7]*1e-2;
+%labxbars = [38,51,51,51,60,66]*1e-2;
+labxbars = (expdata(:,1))*1e-2;
+labybars = (expdata(:,2))*1e-2;
+labxbars = labxbars - par.sc/par.sb * (labybars-max(labybars));
+
+delxys = labybars-labxbars;
+%labybars = [3.5,37.6,11.4,13,12.5,41]*1e-2 + par.H;
+%delxys = [40.2,61.3,35.1,36.7,27.2,49.7]*1e-2;
+
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 %ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
-numPar.x0 = 1e-4;
-numPar.v0= 0; %initial velocity in m/s
-numPar.tf = 5;
+% numPar.x0 = 1e-4;
+% numPar.v0= 0; %initial velocity in m/s
+% numPar.tf = 5;
+
 delta = 1e-6;%bar
 numfrequencies = zeros(length(delxys),length(xbars));
 labfrequencies = zeros(length(delxys), length(labxbars));
@@ -50,11 +82,12 @@ for j =1:length(delxys)
         end
         par.ybar = par.delxy + par.xbar;
         %% Make a lookup table with pre-computed thermodynamic properties.
+        % I think that the following line shou
         par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
         P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
         par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
-
-        xv = 1 - 1e-2;
+        % xv is vapor fraction in head space - we added a small amount of liquid so that there is always something condensible.
+        xv = 1 - 1e-2; 
         sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
         sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
         s = xv*sv + (1-xv)*sl; % gives specific entropy of water+vapor mixture in J/kg/C
@@ -80,10 +113,13 @@ for j =1:length(delxys)
             propagated_errors(j,k-length(xbars)) = propagation(par,1);
         end
     end
+    fprintf('Using %d out of 36 \n',j);
 end
-err = [0.0003075117811,0.0006765997287,0.0003365434388,0.000366547911,0.0005258494879,0.0004347155603]*2*pi;
+%err = [0.0003075117811,0.0006765997287,0.0003365434388,0.000366547911,0.0005258494879,0.0004347155603]*2*pi;
+err = expdata(:,4)/2;
 figure;
-exp_frequencies = [3.82,3.19,3.69,3.64,3.75,3.27]/(2*pi);
+exp_frequencies = expdata(:,3)/(2*pi);
+%exp_frequencies = [3.82,3.19,3.69,3.64,3.75,3.27]/(2*pi);
 plot(xbars*1e2,numfrequencies, 'MarkerSize',15); hold on
 for l=1:6
     errorbar(labxbars(l)*1e2,exp_frequencies(l),propagated_errors(l,l), '.', 'MarkerSize', 15);
@@ -107,10 +143,11 @@ caxis([min(color_variable) max(color_variable)])
 
 scatter(labfrequencies(1,:),exp_frequencies,[],colors, 'filled');
 a=colorbar();
-% ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
-xave=linspace(0.4,0.65,51); plot(xave,xave,'--');
-set(gca,'FontSize',14);
-xlabel('Predicted Frequency (Hz)','fontsize',14)%)%,14,'interpreter','latex')
-ylabel('Observed Frequency (Hz)','fontsize',14)%'interpreter','latex')
-title('Predicted vs Observed Frequency','fontsize',14)%'interpreter','latex')
+
+ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
+xave=linspace(0.45,1.2,51); plot(xave,xave,'--');
+xlabel('Predicted Frequency (Hz)','fontsize',14,'interpreter','latex')
+ylabel('Observed Frequency (Hz)','fontsize',14,'interpreter','latex')
+title('Predicted vs Observed Frequency','fontsize',14,'interpreter','latex')
+
 hold off
