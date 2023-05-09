@@ -104,7 +104,8 @@ a=colorbar();
 ylabel(a, '$\bar y - \bar x$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
 
 xave=linspace(0.4,.65*freqscale,51); plot(xave,xave,'--');
-xlabel('Predicted Frequency (Hz)','fontsize',14,'interpreter','latex')
-ylabel('Observed Frequency (Hz)','fontsize',14,'interpreter','latex')
-title('Predicted vs Observed Frequency, Cold Water','fontsize',14,'interpreter','latex')
+set(gca,'FontSize',14)
+xlabel('Predicted Frequency (Hz)','fontsize',14)%,'interpreter','latex')
+ylabel('Observed Frequency (Hz)','fontsize',14)%,'interpreter','latex')
+title('Predicted vs Observed Frequency, Cold Water','fontsize',14)%'interpreter','latex')
 hold off
