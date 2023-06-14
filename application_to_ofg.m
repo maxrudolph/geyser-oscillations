@@ -1,9 +1,9 @@
 % Application of geyser model to old faithful
 clear;
 close all;
-addpath XSteam_Matlab_v2.6\;
-addpath Ideal_Gas\;
-addpath Steam\
+addpath XSteam_Matlab_v2.6;
+addpath Ideal_Gas;
+addpath Steam
 %closed = true;
 par.sb = 80;
 par.sc = 1;
@@ -15,22 +15,23 @@ par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 par.H = 7;
 par.sl=1;
 par.L=0;
-nx=10;
+
+nx=100;
 delta = 1e-6;%bar
-% xx = linspace(4,6.999,nx);
+%xx = linspace(4,6.999,nx);
 xx = logspace(-3.5,log10(par.H),nx);% actually H-xbar
-ny = 11;
+ny = 101;
 yy = linspace(0,30,ny);
 
 freq = zeros(ny,nx);
 for a=1:nx
     for j=1:ny
-        if( yy(j) >= xx(a) )
-            par.xbar =-xx(a)+par.H;
-            par.ybar =yy(a);
-            par.delxy=par.ybar-par.xbar;
-            par.Vol_0 = par.sb*(par.xbar); %initial (equilibrium) volume in m^3
-            P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
+        if( yy(j) >= par.H- xx(a) )
+            par.xbar = par.H-xx(a);
+            par.ybar = yy(j);
+            par.delxy = par.ybar-par.xbar;
+            par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
+            P_0 = par.rho*par.g*(par.delxy) + par.Pa0; %initial pressure in (Pascal)
             xv = 1 - 1e-2;
             sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
             sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1

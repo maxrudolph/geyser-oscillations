@@ -8,7 +8,7 @@ sig_len = 2e-2; %uncertainty in measures of length, 1 cm
 k0 = -par.Vol_0.*par.FdPdv(par.Vol_0);
 
 xi0 = par.Fdudp(par.Vol_0);
-delta = 1e-3;
+delta = sqrt(eps( (par.H-par.xbar)*par.sb) );
 dxidx0 = (par.Fdudp(par.sb*(par.H-par.xbar-delta))-par.Fdudp(par.sb*(par.H-par.xbar+delta) )) /(2*delta);
 %dkdx = dp/dvdx * v + dp/dv * dv/dx
 dpdvdx0v0  = -par.Vol_0*(par.FdPdv(par.sb*(par.H-par.xbar-delta))-par.FdPdv(par.sb*(par.H-par.xbar+delta) ) ) /(2*delta);
