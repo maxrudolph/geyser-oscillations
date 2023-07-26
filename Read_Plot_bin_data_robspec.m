@@ -10,8 +10,8 @@ format compact
 NW=2;	% time-bandwidth product for multi-taper spectral estimation
 
 % define window to view
-t1=100;	% start time in seconds, start of record = 0
-t2=470;	% end time in seconds, end of record = 0
+t1=00;	% start time in seconds, start of record = 0
+t2=0;	% end time in seconds, end of record = 0
 
 % viewing order
 vo=[4 6 3 2 1 5];
@@ -128,37 +128,50 @@ for i=1:6
   ylabel('T, C')
   title(tS)
 end
-%% try Rob's multitaper
+%% try Rob's multitaper code to make a spectrogram
 
 % [Pxx,Exx,pX,f]=mt_cspek_phs(P(2,t1:t2),Fs,1);
 % figure()
 % plot(f,Pxx);
-window_length = 30*Fs;
-overlap = window_length*1/2;
+window_length = 20*Fs;
+overlap = window_length*8/10;
 pp = P(2,t1:t2);
 N1 = length(pp);
+
 ind=1;
 start_indices = 1:(window_length-overlap):(N1-window_length-1);
+start = start_indices(ind);
+signal = pp(start:(start+window_length-1));
+%window = hamming(window_length)';
+window = ones(size(signal));
 
-for start = start_indices
-    start
-    signal = pp(start:(start+window_length));
-    [Pxx,Exx,pX,f]=mt_cspek_phs(signal,Fs,1);
+[Pxx,Exx,pX,f]=mt_cspek_phs(signal.*window,Fs,1);
+all_Pxx = zeros(length(Pxx),length(start_indices));
+all_Pxx(:,ind) = Pxx;
+
+parfor ind = 2:length(start_indices)
+    start = start_indices(ind);
+    signal = pp(start:(start+window_length-1));
+    [Pxx,Exx,pX,f]=mt_cspek_phs(window.*signal,Fs,1);
     if ind==1
-        all_Pxx = zeros(length(Pxx),length(start_indices));
-        all_Pxx(:,ind) = Pxx;
+       all_Pxx(:,ind) = Pxx;
     else
        all_Pxx(:,ind) = Pxx; 
     end
-    ind = ind + 1;    
 end
-figure()
+%
+figure('Position',[535 210 2158 701]);
 subplot(2,1,1);
 plot(t(t1:t2),pp);
+ax1 = gca();
 subplot(2,1,2);
-pcolor(t(t1)+(start_indices+window_length/2-1)/Fs,f,all_Pxx); shading flat; set(gca,'YLim',[0 1]);
-hold on
-yline(0.28,'k--')
+pcolor(t(t1)+(start_indices+window_length/2-1)/Fs,f,all_Pxx); shading flat; set(gca,'YLim',[1/window_length/Fs 2]);
+% hold on
+% yline(0.28,'k--')
+ax2 = gca();
+set(ax2,'XLim',ax1.XLim)
+set(gca,'ColorScale','log'); colorbar; drawnow;
+ax1.Position(3) = ax2.Position(3);
 
 %% very slow power spectrum
 %linkaxes([a21 a22],'x')
