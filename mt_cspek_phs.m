@@ -1,7 +1,13 @@
 function  [Pxx,Exx,pX,f]= mt_cspek_phs(x,Fs,unc);
+% NOTE - this function was modified from Rob Sohn's cross-spectral analysis
+% code. The cross-spectral part has been removed and the function now
+% returns only a multi-taper power spectrum of the input signal x.
+% Please ignore all references to y, yy, xy.
+% - Max Rudolph, July 2023
+% 
 %
 %   Function "mt_cspekk" computes the power spectral densities of the 
-% vectors "x" and "y", the cross-spectrum, transfer-function, and coherence
+% vector "x"
 % using the multitaper method. 
 % Compute "e" and "v" using the MATLAB function "dpss".
 % 	The normalization is such that the PSD is defined from 0 to the 
@@ -10,13 +16,7 @@ function  [Pxx,Exx,pX,f]= mt_cspek_phs(x,Fs,unc);
 % i.e. sum(Pxx*df) = var(x), where df = 1/(nfft*dt);
 %
 %	Pxx  = X-vector power spectral density
-%	Pyy  = Y-vector power spectral density
-%	Pxy  = Cross spectral density
-%	Txy  = Complex transfer function from X to Y = Pxy./Pxx
-%	Cxy  = Coherence function between X nd Y = (abs(Pxy).^2)./(Pxx.*Pyy)
 %   pX  = phase of Sx(f), radians
-%   pY  = phase of Sy(f), radians
-%   pXY  = phase of Sxy(f), radians
 %
 %
 %                                                         j.a. collins
@@ -72,12 +72,12 @@ if (nargin < 3)
 end
 
 x = x(:);		       % Make sure x is a column vector
-x = detrend(x,0);      % remove mean
+x = detrend(x,1);      % remove mean
 % y = y(:);		       % Make sure x is a column vector
 % y = detrend(y,0);      % remove mean
 
 N = length(x);
-[e,v] = dpss(N,3); % from Rob's code in Rudolph and Sohn 2018
+[e,v] = dpss(N,2); % from Rob's code in Rudolph and Sohn 2018
 
 nfft = max(256,2^nextpow2(N));
 % compute PSD for x

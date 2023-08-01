@@ -4,14 +4,11 @@
 %
 
 clear all
+close all
 format compact
 
 % set params
-NW=2;	% time-bandwidth product for multi-taper spectral estimation
-
-% define window to view
-t1=00;	% start time in seconds, start of record = 0
-t2=0;	% end time in seconds, end of record = 0
+% NW=2;	% time-bandwidth product for multi-taper spectral estimation
 
 % viewing order
 vo=[4 6 3 2 1 5];
@@ -20,7 +17,9 @@ vo=[4 6 3 2 1 5];
 
 % file name
 % iS=['/Volumes/LoneStar/2023/Eruption1_1inch_topconst_20230518_15_28_59.bin'];
-iS = ['./05-18/Eruption4_1inch_topconst_midconst-20230518-18-19-41.bin'];
+% iS = ['./05-18/Eruption4_1inch_topconst_midconst-20230518-18-19-41.bin'];
+iS = ['./05-17/Eruption3_1inch_midconstrict1a_-20230517-16-20-38.bin']
+% iS = ['./05-18/Eruption1_1inch_topconst-20230518-15-31-15.bin'];
 
 % read binary
 fd=fopen(iS,"rb");
@@ -76,6 +75,10 @@ for i=1:DevCount
 end
 
 t=0:1/Fs:(length(T(1,:))-1)/Fs; % relative time vector
+%% Set min/max time
+% define window to view
+t1=0;	% start time in seconds, start of record = 0
+t2=2000;	% end time in seconds, end of record = 0
 
 if t1 == 0
   t1=1;
@@ -133,8 +136,8 @@ end
 % [Pxx,Exx,pX,f]=mt_cspek_phs(P(2,t1:t2),Fs,1);
 % figure()
 % plot(f,Pxx);
-window_length = 20*Fs;
-overlap = window_length*8/10;
+window_length = 100*Fs;
+overlap = window_length*1/2;
 pp = P(2,t1:t2);
 N1 = length(pp);
 
@@ -145,47 +148,55 @@ signal = pp(start:(start+window_length-1));
 %window = hamming(window_length)';
 window = ones(size(signal));
 
-[Pxx,Exx,pX,f]=mt_cspek_phs(signal.*window,Fs,1);
+[Pxx,Exx,pX,frequency]=mt_cspek_phs(signal.*window,Fs,1);
 all_Pxx = zeros(length(Pxx),length(start_indices));
 all_Pxx(:,ind) = Pxx;
 
 parfor ind = 2:length(start_indices)
     start = start_indices(ind);
     signal = pp(start:(start+window_length-1));
-    [Pxx,Exx,pX,f]=mt_cspek_phs(window.*signal,Fs,1);
+    [Pxx,Exx,pX,frequency]=mt_cspek_phs(window.*signal,Fs,1);
     if ind==1
        all_Pxx(:,ind) = Pxx;
     else
        all_Pxx(:,ind) = Pxx; 
     end
 end
-%
-figure('Position',[535 210 2158 701]);
+%% spectrogram figure
+% figure('Position',[535 210 2158 701]);
+figure();
+fig=gcf();
+fig.Position(3) = fig.Position(4)*2;
 subplot(2,1,1);
 plot(t(t1:t2),pp);
 ax1 = gca();
 subplot(2,1,2);
-pcolor(t(t1)+(start_indices+window_length/2-1)/Fs,f,all_Pxx); shading flat; set(gca,'YLim',[1/window_length/Fs 2]);
+pcolor(t(t1)+(start_indices+window_length/2-1)/Fs,frequency,all_Pxx); shading flat; 
 % hold on
 % yline(0.28,'k--')
 ax2 = gca();
 set(ax2,'XLim',ax1.XLim)
 set(gca,'ColorScale','log'); colorbar; drawnow;
+set(ax2,'YScale','log');
+set(gca,'YLim',[max(1/window_length/Fs,min(frequency)) 100]);
+linkaxes([ax1,ax2],'x')
 ax1.Position(3) = ax2.Position(3);
+yline(1/7,'r--')
+
 
 %% very slow power spectrum
 %linkaxes([a21 a22],'x')
-linkaxes([a21 a22 a23 a24 a25 a26],'x')
+% linkaxes([a21 a22 a23 a24 a25 a26],'x')
 
 % estimate spectra
-for i=1:6
+% for i=1:6
 %   [Pxx(i,:),f]=pmtm(P(i,t1:t2)-mean(P(i,t1:t2)),NW,length(P(i,t1:t2)),Fs);
 %  [Txx(i,:),f]=pmtm(T(i,:)-mean(T(i,:)),NW,length(T(i,:)),Fs);
-end
+% end
 
 % plot spectra
-figure(3)
-clf
+% figure(3)
+% clf
 
 % for i=1:6
 %   subplot(2,3,i)
@@ -213,42 +224,42 @@ clf
 %figure(5)
 %clf
 %% 
-for i=4:4
-  figure(i+3)
-  clf
-  
-  [S,F,TT,PP]=spectrogram(P(vo(i),t1:t2),5*Fs,0,[],Fs,'yaxis');
-  subplot(7,1,1)
-  plot(t(t1:t2),P(vo(i),t1:t2),'k')
-  ylabel('P, bar')
-  set(gca,'XLim',[t1/Fs t2/Fs]);
-  tS=['Sensor ',num2str(vo(i))];
-  title(tS)
-  subplot(7,1,2:4)
-  pcolor(TT,log10(F),10*log10(PP));%,'edgecolor','none')
-  view(0,90)
-  ii=find(F >= 10 & F < 1000);
-  cmin=10*log10(min(min(PP(ii))));
-  cmax=10*log10(max(max(PP(ii))));
-  crange=cmax-cmin;
-  cmax2=cmin+1.0*crange;
-  cmin2=cmax-0.5*crange;
-  set(gca,'Clim',[cmin2 cmax2]);
-  set(gca,'YLim',[log10(10) log10(1000)]);
-  set(gca,'XLim',[0 (t2-t1)/Fs]);
-  shading flat
-%   [S,F,TT,PP]=spectrogram(P(vo(i),t1:t2),hamming(25*Fs),0,[],Fs);
-%   subplot(7,1,5:7)
-%   surf(TT,log10(F),10*log10(PP),'edgecolor','none')
+% for i=4:4
+%   figure(i+3)
+%   clf
+% 
+%   [S,F,TT,PP]=spectrogram(P(vo(i),t1:t2),5*Fs,0,[],Fs,'yaxis');
+%   subplot(7,1,1)
+%   plot(t(t1:t2),P(vo(i),t1:t2),'k')
+%   ylabel('P, bar')
+%   set(gca,'XLim',[t1/Fs t2/Fs]);
+%   tS=['Sensor ',num2str(vo(i))];
+%   title(tS)
+%   subplot(7,1,2:4)
+%   pcolor(TT,log10(F),10*log10(PP));%,'edgecolor','none')
 %   view(0,90)
-%   ii=find(F < 10 & F > 0.1);
+%   ii=find(F >= 10 & F < 1000);
 %   cmin=10*log10(min(min(PP(ii))));
 %   cmax=10*log10(max(max(PP(ii))));
 %   crange=cmax-cmin;
 %   cmax2=cmin+1.0*crange;
 %   cmin2=cmax-0.5*crange;
 %   set(gca,'Clim',[cmin2 cmax2]);
-%   set(gca,'YLim',[log10(0.1) log10(10)]);
+%   set(gca,'YLim',[log10(10) log10(1000)]);
 %   set(gca,'XLim',[0 (t2-t1)/Fs]);
 %   shading flat
-end
+% %   [S,F,TT,PP]=spectrogram(P(vo(i),t1:t2),hamming(25*Fs),0,[],Fs);
+% %   subplot(7,1,5:7)
+% %   surf(TT,log10(F),10*log10(PP),'edgecolor','none')
+% %   view(0,90)
+% %   ii=find(F < 10 & F > 0.1);
+% %   cmin=10*log10(min(min(PP(ii))));
+% %   cmax=10*log10(max(max(PP(ii))));
+% %   crange=cmax-cmin;
+% %   cmax2=cmin+1.0*crange;
+% %   cmin2=cmax-0.5*crange;
+% %   set(gca,'Clim',[cmin2 cmax2]);
+% %   set(gca,'YLim',[log10(0.1) log10(10)]);
+% %   set(gca,'XLim',[0 (t2-t1)/Fs]);
+% %   shading flat
+% end
