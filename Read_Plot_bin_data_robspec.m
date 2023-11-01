@@ -2,7 +2,6 @@
 %
 % RAS, 4/22
 %
-
 clear all
 close all
 format compact
@@ -11,15 +10,16 @@ format compact
 % NW=2;	% time-bandwidth product for multi-taper spectral estimation
 
 % viewing order
-vo=[4 6 3 2 1 5];
+vo=[6 4 3 2 1 5];
 
 % load data
 
 % file name
-% iS=['/Volumes/LoneStar/2023/Eruption1_1inch_topconst_20230518_15_28_59.bin'];
+% iS=['/Volumes/LoneStar/2023/
+% iS=['./05-18/Eruption1_1inch_topconst_20230518_15_28_59.bin'];
 % iS = ['./05-18/Eruption4_1inch_topconst_midconst-20230518-18-19-41.bin'];
-iS = ['./05-17/Eruption3_1inch_midconstrict1a_-20230517-16-20-38.bin']
-% iS = ['./05-18/Eruption1_1inch_topconst-20230518-15-31-15.bin'];
+% iS = ['./05-17/Eruption3_1inch_midconstrict1a_-20230517-16-20-38.bin']
+iS = ['./05-18/Eruption1_1inch_topconst-20230518-15-31-15.bin'];
 
 % read binary
 fd=fopen(iS,"rb");
@@ -77,8 +77,8 @@ end
 t=0:1/Fs:(length(T(1,:))-1)/Fs; % relative time vector
 %% Set min/max time
 % define window to view
-t1=0;	% start time in seconds, start of record = 0
-t2=2000;	% end time in seconds, end of record = 0
+t1=100;	% start time in seconds, start of record = 0
+t2=400;	% end time in seconds, end of record = 0
 
 if t1 == 0
   t1=1;
@@ -131,12 +131,36 @@ for i=1:6
   ylabel('T, C')
   title(tS)
 end
+%% try to use multitaper code to plot phase between signals
+signal1 = P(6,t1:t2);
+signal2 = P(4,t1:t2);
+[e,v] = dpss(length(signal1),2);
+[Pxx,Pyy,Pxy,Txy,Cxy,Exx,Eyy,ETxy,pX,pY,pXY,f,DOFxys,zsl,Er_p,Er_c,Er_Tf,r] = mt_cspek_phs(signal1,signal2,Fs,e,v,1);
+%% 
+figure();
+ax1=subplot(3,1,1);
+plot(f,pXY);
+set(gca,'XScale','log')
+ax2=subplot(3,1,2);
+plot(f,Cxy)
+hold on
+plot(f,zsl,'r')
+set(gca,'XScale','log')
+ax3=subplot(3,1,3)
+v = 1.05*2*pi*(f./pXY);
+plot(f,v);
+set(gca,'XScale','log');
+set(gca,'Ylim',[-20 20]);
+
+linkaxes([ax1,ax2,ax3],'x')
+
+
 %% try Rob's multitaper code to make a spectrogram
 
 % [Pxx,Exx,pX,f]=mt_cspek_phs(P(2,t1:t2),Fs,1);
 % figure()
 % plot(f,Pxx);
-window_length = 100*Fs;
+window_length = 10*Fs;
 overlap = window_length*1/2;
 pp = P(2,t1:t2);
 N1 = length(pp);
@@ -148,7 +172,7 @@ signal = pp(start:(start+window_length-1));
 %window = hamming(window_length)';
 window = ones(size(signal));
 
-[Pxx,Exx,pX,frequency]=mt_cspek_phs(signal.*window,Fs,1);
+[Pxx,Exx,pX,frequency]=mt_phs(signal.*window,Fs,1);
 all_Pxx = zeros(length(Pxx),length(start_indices));
 all_Pxx(:,ind) = Pxx;
 

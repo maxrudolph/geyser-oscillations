@@ -6,7 +6,7 @@ addpath XSteam_Matlab_v2.6\;
 addpath Ideal_Gas\;
 addpath Steam\
 geometry = 1;
-conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
+conduit_diameter = 2; % 1 -> 1 inch, 2 -> 2 inches
 switch conduit_diameter
     case 1
         filename='hot-water-freq-filtered-1in_short.csv';
