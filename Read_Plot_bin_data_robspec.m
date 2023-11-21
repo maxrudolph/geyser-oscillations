@@ -19,7 +19,15 @@ vo=[6 4 3 2 1 5];
 % iS=['./05-18/Eruption1_1inch_topconst_20230518_15_28_59.bin'];
 % iS = ['./05-18/Eruption4_1inch_topconst_midconst-20230518-18-19-41.bin'];
 % iS = ['./05-17/Eruption3_1inch_midconstrict1a_-20230517-16-20-38.bin']
-iS = ['./05-18/Eruption1_1inch_topconst-20230518-15-31-15.bin'];
+% iS = ['./05-18/Eruption1_1inch_topconst-20230518-15-31-15.bin'];
+
+
+iS = ['05-19/Eruption1_1inch_topconst-20230519-15-34-50.bin'];
+t1=0; t2=250; %filling stage
+% t1=100; t2=200; % also filling stage.
+% t1=310; t2=350; % system nearly full, pre-eruption
+
+
 
 % read binary
 fd=fopen(iS,"rb");
@@ -77,15 +85,14 @@ end
 t=0:1/Fs:(length(T(1,:))-1)/Fs; % relative time vector
 %% Set min/max time
 % define window to view
-t1=100;	% start time in seconds, start of record = 0
-t2=400;	% end time in seconds, end of record = 0
 
-if t1 == 0
+
+if ~exist('t1') || t1 == 0
   t1=1;
 else
   t1=t1*Fs;
 end
-if t2 == 0
+if ~exist('t2') || t2 == 0
   t2=length(t);
 else
   t2=t2*Fs;
@@ -160,8 +167,8 @@ linkaxes([ax1,ax2,ax3],'x')
 % [Pxx,Exx,pX,f]=mt_cspek_phs(P(2,t1:t2),Fs,1);
 % figure()
 % plot(f,Pxx);
-window_length = 10*Fs;
-overlap = window_length*1/2;
+window_length = 50*Fs;
+overlap = window_length*0.9;
 pp = P(2,t1:t2);
 N1 = length(pp);
 
@@ -179,7 +186,7 @@ all_Pxx(:,ind) = Pxx;
 parfor ind = 2:length(start_indices)
     start = start_indices(ind);
     signal = pp(start:(start+window_length-1));
-    [Pxx,Exx,pX,frequency]=mt_cspek_phs(window.*signal,Fs,1);
+    [Pxx,Exx,pX,frequency]=mt_phs(window.*signal,Fs,1);
     if ind==1
        all_Pxx(:,ind) = Pxx;
     else
