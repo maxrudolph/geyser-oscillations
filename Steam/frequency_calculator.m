@@ -3,7 +3,7 @@ sbsc= par.sb ./ par.sc;
 sbsl= par.sb ./ par.sl;
 Hx = par.H-par.xbar;
 sig_area = 5e-4; %uncertainty in measures of area, 5 cm^2
-sig_len = 2e-2; %uncertainty in measures of length, 1 cm
+sig_len = 1e-3; %uncertainty in measures of length, 1 cm
 
 k0 = -par.Vol_0.*par.FdPdv(par.Vol_0);
 
