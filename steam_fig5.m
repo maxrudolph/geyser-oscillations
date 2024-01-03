@@ -6,12 +6,12 @@ addpath XSteam_Matlab_v2.6\;
 addpath Ideal_Gas\;
 addpath Steam\
 geometry = 1;
-conduit_diameter = 2; % 1 -> 1 inch, 2 -> 2 inches
+conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
 switch conduit_diameter
     case 1
         filename='hot-water-freq-filtered-1in_short.csv';
         par.sc = pi*(1/2*2.54/100)^2; %cross-section of 1-inch tube in cm^2
-        par.H = 31.8e-2; % "new" short 1 inch pickup in m
+        par.H = 31.8e-2; % "new" short 1 inch pickup in m        
         %par.H = 58e-2; % old, longer 1 inch pickup in m
     case 2
         filename='hot-water-freq-filtered-2in_v3.csv';
@@ -113,8 +113,9 @@ exp_frequencies = expdata(:,3)/(2*pi);
 % %legend('y-x=40.2 cm','y-x=61.3 cm','y-x=35.1 cm','y-x=36.7 cm','y-x=27.2 cm','y-x=49.7 cm','y-x=17.7 cm','Location','northeast')
 % ylim([-0.1,2])
 % xlim([0,par.H*1e2])
-
-figure;
+%% plotting
+f=figure();
+f.Position(3:4) = [368 288];
 p2=errorbar(labfrequencies(1,:), exp_frequencies,err,err,propagated_errors(1,:),propagated_errors(1,:),'.'); hold on
 p2(1).MarkerSize = 15;
 cmap = colormap('jet'); % retrieve the jet colormap
@@ -122,12 +123,18 @@ cmap = colormap('jet'); % retrieve the jet colormap
 color_variable = (delxys*1e2);
 colors = interp1(linspace(min(color_variable),max(color_variable),length(cmap)),cmap,color_variable);
 caxis([min(color_variable) max(color_variable)])
-
+% filled = conduit_diamer == 1;
 scatter(labfrequencies(1,:),exp_frequencies,[],colors, 'filled');
+axis equal;
 a=colorbar();
-ylabel(a, 'ybar-xbar','fontsize',14,'interpreter','latex', 'Rotation',90)
-xave=linspace(min(labfrequencies)-0.2,max(labfrequencies)+0.2,5); plot(xave,xave,'--');
+ylabel(a,'$\bar{y}-\bar{x}$ (cm)','fontsize',14,'interpreter','latex', 'Rotation',90)
+set(gca,'YLim',get(gca,'XLim'))
+% xave=linspace(min(labfrequencies)-0.2,max(labfrequencies)+0.2,5); 
+xave=get(gca,'XLim');
+plot(xave,xave,'k--');
 xlabel('Predicted Frequency (Hz)','fontsize',14,'interpreter','latex')
 ylabel('Observed Frequency (Hz)','fontsize',14,'interpreter','latex')
-title('Predicted vs Observed Frequency','fontsize',14,'interpreter','latex')
+% title('Predicted vs Observed Frequency','fontsize',14,'interpreter','latex')
+title(['Hot Water Oscillations, ' num2str(conduit_diameter) '-inch Conduit'],'fontsize',14,'interpreter','latex')
 hold off
+exportgraphics(gcf,['frequencies_' num2str(conduit_diameter) '.pdf']);

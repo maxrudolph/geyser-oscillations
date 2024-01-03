@@ -23,7 +23,7 @@ vo=[6 4 3 2 1 5];
 
 
 iS = ['05-19/Eruption1_1inch_topconst-20230519-15-34-50.bin'];
-t1=0; t2=250; %filling stage
+t1=150; t2=250; %filling stage
 % t1=100; t2=200; % also filling stage.
 % t1=310; t2=350; % system nearly full, pre-eruption
 
@@ -167,9 +167,9 @@ linkaxes([ax1,ax2,ax3],'x')
 % [Pxx,Exx,pX,f]=mt_cspek_phs(P(2,t1:t2),Fs,1);
 % figure()
 % plot(f,Pxx);
-window_length = 50*Fs;
+window_length = 30*Fs;
 overlap = window_length*0.9;
-pp = P(2,t1:t2);
+pp = P(4,t1:t2);
 N1 = length(pp);
 
 ind=1;
