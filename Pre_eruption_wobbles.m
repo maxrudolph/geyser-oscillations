@@ -312,16 +312,19 @@ uncertainties = zeros(size(window_start));
 
 Pxx = zeros()
 % get spectra for discrete time windows
-winlens=30;	% window length, sec
+winlens=40;	% window length, sec
 winlen=winlens*fs;
 
-nfft=512;
-Pxx=zeros(Nwin,nfft/2+1);
+% nfft=512;
+% Pxx=zeros(Nwin,nfft/2+1);
+
 
 iwin = 0;
 for win_start = window_start
     iwin = iwin + 1;
     mask = t>= win_start & t <= win_start+window_s;
+  
+
 
     % set xbar and ybar
     par.xbar = mean(tank_level(mask)) - (tank_height-par.H);
@@ -335,7 +338,13 @@ for win_start = window_start
     win_Pd = decimate(detrend(P(inst,mask)),dec); % decimate sensor (inst) by decimation factor.
     win_td = decimate(t(mask),dec);
     Fsd = Fs/dec;
-    [Pxx(iwin,:),f]=pmtm(win_Pd,2,nfft,Fsd);
+    % [Pxx(iwin,:),f]=pmtm(win_Pd,2,nfft,Fsd);
+    window = ones(size(win_Pd));
+    if iwin==1
+        [~,~,~,f]=mt_phs(win_Pd.*window,Fsd,1);
+        Pxx = zeros(Nwin,length(f));
+    end
+    [Pxx(iwin,:),~,~,f]=mt_phs(win_Pd.*window,Fsd,1);
     
     % y=P(3,t1+(n-1)*winlens*Fs:t1+n*winlens*Fs);
     % watlev(n)=80+(mean(y')-pamb)/9.81e-04;	% water level, cm
@@ -352,8 +361,9 @@ ax2=subplot(4,1,1);
 plot(t(mask),P(inst,mask));
 
 ax1=subplot(4,1,2:4);
-pcolor(window_start,(f),10*log10(Pxx'));%,'edgecolor','none');
-set(gca,'YScale','log')
+pcolor(window_start,(f),log10(Pxx'));%,'edgecolor','none');
+set(gca,'YScale','log');
+set(gca,'ColorScale','log');
 shading flat
 % view(0,90);
 set(gca,'YLim',[-0.7 0.0]);
