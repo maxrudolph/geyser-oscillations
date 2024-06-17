@@ -9,7 +9,7 @@ close all;
 
 % define window to view
 t1=0; % start time in seconds, start of record = 0
-t2=190; % end time in seconds, end of record = 0
+t2=0; % end time in seconds, end of record = 0
 % viewing order
 vo=[6 4 3 2 1 5];
 
@@ -24,6 +24,7 @@ if ans ~= 1
 % file name
   % iS=['/Volumes/LoneStar/2023/Eruption2b_1inch_topconst_20230518_16_21_51.bin'];
   iS=['./05-18/Eruption2b_1inch_topconst-20230518-16-21-51.bin'];
+  % iS = ['04-05-2024/Steam_eruption_X0full-20240405-18-07-49.bin'];
   pamb=1.032;	% ambient pressure, bar
 
 

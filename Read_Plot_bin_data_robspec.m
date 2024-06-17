@@ -23,7 +23,7 @@ vo=[6 4 3 2 1 5];
 
 
 iS = ['05-19/Eruption1_1inch_topconst-20230519-15-34-50.bin'];
-t1=150; t2=250; %filling stage
+t1=150; t2=400; %filling stage
 % t1=100; t2=200; % also filling stage.
 % t1=310; t2=350; % system nearly full, pre-eruption
 
