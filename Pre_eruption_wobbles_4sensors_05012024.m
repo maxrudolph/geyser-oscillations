@@ -18,15 +18,16 @@ vo = [4 3 2 1];
 do_calibration = false;
 if do_calibration
     % example of what the calibration table is expected to look like:
-    % calibration_table = [
-    %    % SSN    % P offset (bar)   T_offset     T_slope
-    %    5122778  0.22586478
-    %    5122770  0.2425978
-    %    5122769  0.24022625
-    %    5940428  0.2364321
-    %    5122777  0.22593766
-    %    5940430  0.25612138
-    %];
+    calibration_table = [
+       % SSN    % P offset (bar)   T_offset     T_slope
+       5122778  0.22586478
+       5122770  0.2425978
+       5122769  0.24022625
+       5940428  0.2364321
+       5122777  0.22593766
+       5940430  0.25612138
+    ];
+
     calibration_table(:,2) = 0;
 else
     load('calibration_05222024.mat');        
@@ -38,10 +39,12 @@ inst=1; % sensor # for spectrogram
 exist P ;
 
 if ans ~= 1
-    pamb=1.01364772;	% ambient pressure, bar
+    
+    pamb = 1.0110777892; % calibration day (5/22) 29.85711 in Hg
+    % iS = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00.bin']
+    iS = ['05-22-2024-calibration/sensor_test_full_tank-20240522-17-52-00.bin']
 
-    iS = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00.bin']
-    % iS = ['05-22-2024-calibration/sensor_test_full_tank-20240522-17-52-00.bin']
+    % pamb=1.01364772;	% ambient pressure, bar (5/30)
     % iS = ['05-30-2024/HeatingUp_fulltank-20240530-14-38-13.bin']    
     % iS = ['05-30-2024/SteamInupt-20240530-16-28-33.bin']
 
@@ -289,7 +292,7 @@ set(gca,'YLim',[100 260]);
 geometry = 1;
 conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
 par = struct(); % initialize structure
-par.g = 9.81;% gravitational acceleration in m*s^-2
+par.g = 9.80665;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 % par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 % par.alpha = 5/2; %diatomic ideal gas constant - unitless
@@ -329,32 +332,32 @@ end
 % sensor 2
 % sensor 1
 
-t1p = 0; t2p = 700; % begin and end times for analysis
+t1p = 0; t2p = Inf; % begin and end times for analysis
 mask = t>=t1p & t <= t2p;
 
 % sensor_heights = [0.0 0.0 0.0 0.0 0.0 0.0];% vector of sensor heights, measured up from bottom of tank.
 
 % tank height
-tank_height = 0.69;% internal height of tank, in m. (metal tank)
+tank_height = 0.685;% internal height of tank, in m. (metal tank)
 
 % for 4/5/2023, 
 % sensor 4 appears to be garbage
 
 % plot Rob's water level and the pressure from P1
 T_tank = T(2,:); % select the temperature record for density determination
-T_lookup = linspace(10,100,1000);
+T_lookup = linspace(10,105,1000);
 for i=1:1000
     rho_lookup(i) = XSteam('rhol_T',T_lookup(i));
 end
 rho_timeseries = interp1(T_lookup,rho_lookup,T_tank);
 
-watlev4 = (P(4,:)-pamb)*1e5/9.81./rho_timeseries; % in m above bottom of tank
-watlev3 = (P(3,:)-pamb)*1e5/9.81./rho_timeseries; % in m above bottom of tank
-watlev2 = (P(2,:)-pamb)*1e5/9.81./rho_timeseries; % in m above bottom of tank
-watlev1 = (P(1,:)-pamb)*1e5/9.81./rho_timeseries; % in m above bottom of tank
+watlev4 = (P(4,:)-pamb)*1e5/par.g./rho_timeseries; % in m above bottom of tank
+watlev3 = (P(3,:)-pamb)*1e5/par.g./rho_timeseries; % in m above bottom of tank
+watlev2 = (P(2,:)-pamb)*1e5/par.g./rho_timeseries; % in m above bottom of tank
+watlev1 = (P(1,:)-pamb)*1e5/par.g./rho_timeseries; % in m above bottom of tank
 %p2 = p1 - rho_w*g*(water level above bottom of tank) - rho_v*g*(depth of
 %steam)
-tank_level = -(P(2,:) - P(1,:))*1e5/9.81./rho_timeseries;
+tank_level = -(P(3,:) - P(1,:))*1e5/par.g ./rho_timeseries-0.0;
 conduit_level = watlev1; % water level inferred from bottom sensor, ok +/- 1 cm?
 
 figure();
@@ -375,6 +378,8 @@ ylabel('Tank level (m)')
 delta_2_1 = mean(watlev2(mask)-watlev1(mask))
 delta_3_1 = mean(watlev3(mask)-watlev1(mask))
 delta_3_2 = mean(watlev3(mask)-watlev2(mask))
+
+plot(t(mask),rho_timeseries(mask)/1000,'r');
 
 subplot(3,1,3);
 plot(t(mask),T(1,mask)); hold on
