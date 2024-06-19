@@ -10,9 +10,9 @@ close all
 % filename = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00'];
 % output_filename = ['calibration_TEST.mat'];
 
-pamb = 1.03482; % durint 6/18 AM calibration
-filename = ['06-18-2024-calibration/NewSensorTests-20240618-11-49-47'];
-output_filename = ['calibration_06182024.mat']
+pamb = 1.03388; % durint 6/18 AM calibration
+filename = ['06-18-2024-calibration/NewSensorTests_WaterLevel0_Room1033p88-20240618-14-29-32'];
+output_filename = ['calibration_06182024-Sensor1-installed.mat']
 
 % calibration table, with temperature values:
 calibration_table = [
@@ -42,15 +42,26 @@ nsensor = length(header.pressure_sensor_serial_numbers);
 
 % make the calibration plots
 figure();
-subplot(2,1,1);
+subplot(3,1,1);
 for i=1:nsensor
     label = sprintf('P%d-%d',i,header.pressure_sensor_serial_numbers(i));
-    plot(P(i,:),'DisplayName',label);
+    h(i) = plot(P(i,:),'DisplayName',label);
     hold on
 end
 legend();
 
-subplot(2,1,2);
+
+subplot(3,1,2);
+for i=1:nsensor
+    [f,xi] = ksdensity(P(i,:));
+    plot(xi,f,'Color',get(h(i),'Color'));
+    hold on
+end
+title('Pressure Histogram')
+xlabel('Pressure (bar)')
+
+
+subplot(3,1,3);
 for i=1:nsensor
     label = sprintf('T%d-%d',i,header.pressure_sensor_serial_numbers(i));
     plot(T(i,:),'DisplayName',label);
@@ -60,7 +71,7 @@ legend();
 
 Pmean = mean(P,2);
 
-P_offset = Pmean-pamb;
+P_offset = pamb-Pmean;
 
 for i=1:nsensor
     ind(i) = find( calibration_table(:,1) == header.pressure_sensor_serial_numbers(i));

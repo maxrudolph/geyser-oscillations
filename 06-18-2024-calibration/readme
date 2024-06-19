@@ -1,0 +1,5 @@
+The files in this directory are tests performed with cold water while filling the tank.
+Each file has a name like
+NewSensorTests_WaterLevel10p7_Room1033p89-20240618-14-41-04
+WaterLevel10p7 means 10.7 cm measured water level
+Room 1033p89 means ambient pressure 1.03389 bar.
