@@ -45,7 +45,7 @@ while status==0
         TNsec=fread(fd,1,'uint32');
         NS=fread(fd,1,'uint32');
         Nt=NS/NumEnChan(i);
-        d=fread(fd,[NumEnChan(i),Nt],'float32');
+        d=fread(fd,[NumEnChan(i),Nt],'float32'); % [number of enabled channels, number of times]
         data(c:c+Nt-1,1:NumEnChan(i),i)=d';
     end
 

@@ -54,6 +54,7 @@ while ~feof(fh)
                         header.pressure_sensor_serial_numbers(sensor_numbers) = serial_numbers;
                     elseif sensor_type == 'T'
                         header.temperature_sensor_serial_numbers(sensor_numbers) = serial_numbers;
+
                     end
                 end % end serial number
             otherwise
