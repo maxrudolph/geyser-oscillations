@@ -126,7 +126,7 @@ Pxx = zeros();
 iwin = 0;
 for win_start = window_start
     iwin = iwin + 1;
-    mask = t>= win_start & t <= win_start+window_s;
+    mask = td>= win_start & td <= win_start+window_s;
 
     % set xbar and ybar
     % par.xbar = mean(tank_level(mask)) - (tank_height-par.H);

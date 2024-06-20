@@ -11,8 +11,8 @@ close all
 % output_filename = ['calibration_TEST.mat'];
 
 pamb = 1.03722; % during 6/18 AM calibration
-filename = ['06-19-2024-calibration/EmptyTankRedo-20240619-12-46-15'];
-output_filename = ['calibration-test.mat']
+filename = ['06-20-2024/EmptyTank_RP1036p83-20240620-09-46-40'];
+output_filename = ['06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat']
 sensor_plot =1:6
 
 % sensor_plot = [1 2 3 5 6]
