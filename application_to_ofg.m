@@ -5,7 +5,7 @@ addpath XSteam_Matlab_v2.6;
 addpath Ideal_Gas;
 addpath Steam
 %closed = true;
-par.sb = 80;
+par.sb = 300;
 par.sc = 1;
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
@@ -13,7 +13,7 @@ par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 par.H = 7;
-par.sl=1;
+par.sl=0.1;
 par.L=0;
 
 nx=100;

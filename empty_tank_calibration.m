@@ -9,11 +9,15 @@ close all
 % Calibration data file:
 % filename = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00'];
 % output_filename = ['calibration_TEST.mat'];
+% sensor_plot = 1:6
+% pamb = 1.03722; % during 6/18 AM calibration
+% filename = ['06-20-2024/EmptyTank_RP1036p83-20240620-09-46-40'];
+% output_filename = ['06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat']
 
-pamb = 1.03722; % during 6/18 AM calibration
-filename = ['06-20-2024/EmptyTank_RP1036p83-20240620-09-46-40'];
-output_filename = ['06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat']
-sensor_plot =1:6
+pamb = 1.03263;
+filename = '06-21-2024/EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58'
+output_filename = ['06-21-2024/calibration-EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58.mat']
+sensor_plot =1:6;
 
 % sensor_plot = [1 2 3 5 6]
 % calibration table, with temperature values:
@@ -73,14 +77,24 @@ legend();
 
 Pmean = mean(P,2);
 
-P_offset = pamb-Pmean;
+P_offset = Pmean-pamb;
 
 for i=1:nsensor
-    ind(i) = find( calibration_table(:,1) == header.pressure_sensor_serial_numbers(i));
+    ind(i) = find( calibration_table(:,1) == header.pressure_sensor_serial_numbers(i))
 end
+
 calibration_table(ind,2) = P_offset;
 % only write out the rows correponding to calibrated sensors
 calibration_table = calibration_table(ind,:);
+
+figure()
+% subplot(3,1,3);
+for i=sensor_plot
+    label = sprintf('T%d-%d',i,header.pressure_sensor_serial_numbers(i));
+    plot(P(i,:)-P_offset(i),'DisplayName',label);
+    hold on
+end
+legend();
 
 save(output_filename,"calibration_table");
 

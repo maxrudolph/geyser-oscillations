@@ -116,7 +116,7 @@ for i=1:DevCount*2
     ind = find(calibration_table(:,1)==header.pressure_sensor_serial_numbers(i));
     if ~isempty(ind)
         T(i,:)=(T(i,:)-calibration_table(ind,3))/calibration_table(ind,4)+25;
-        P(i,:)=P(i,:)+calibration_table(ind,2);
+        P(i,:)=P(i,:)-calibration_table(ind,2);
     else
         error('sensor not found')
     end

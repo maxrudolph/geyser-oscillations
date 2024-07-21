@@ -7,8 +7,11 @@ p_amb = 1.03707;
 % filename = '06-19-2024/AddingWaterFromTop_1p5kWheat_RP1036p70-20240619-14-49-00';
 % calibration_file = 'calibration-test.mat';
 % sensors_plot = [1 2 3 4 5];
-filename = '06-19-2024/ConeEruption_AllHeaters_1Lpmin-20240619-17-00-56'
-calibration_file = '06-19-2024/calibration-06-19-2024.mat'
+% filename = '06-19-2024/ConeEruption_AllHeaters_1Lpmin-20240619-17-00-56'
+% calibration_file = '06-19-2024/calibration-06-19-2024.mat'
+filename = '06-20-2024/ConeEruptionTopConstriction_1p2LpMin_AllHeaters_-20240620-15-17-17';
+calibration_file = '06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat';
+
 sensors_plot = [1 2 3 4 5 ];
 % p_amb = 0;
 % filename = ['06-18-2024-calibration/NewSensorTests-20240618-11-49-47']
