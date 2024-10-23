@@ -142,10 +142,10 @@ fs=round(1/dt);
 dt=1/fs;
 
 % excerpt data for analysis
-% t1a=datenum(1994, 10, 20, 18, 08, 00);
-% t2a=datenum(1994, 10, 20, 18, 16, 00);
-t1a=datenum(1994, 10, 20, 18, 05, 00);
-t2a=datenum(1994, 10, 20, 18, 25, 00);
+t1a=datenum(1994, 10, 20, 18, 08, 00);
+t2a=datenum(1994, 10, 20, 18, 16, 00);
+% t1a=datenum(1994, 10, 20, 18, 05, 00);
+% t2a=datenum(1994, 10, 20, 18, 25, 00);
 % t2a=datenum(1994, 10, 20, 18, 19, 20);
 ti=find(p(1).t >= t1a & p(1).t <= t2a);
 t=p(1).t(ti);
@@ -155,9 +155,10 @@ ts=0:dt:(length(t)-1)*dt;
 
 figure(103); clf;
 subplot(2,1,1);
-h1=plot(t,p1a,'r');
+h1=plot(t,p1a,'r','DisplayName','1');
 hold on
-h2=plot(t,p2a,'b');
+h2=plot(t,p2a,'b','DisplayName','2');
+legend();
 datetick('x','HH:MM')
 xlabel('Time, Oct. 20, 1994')
 ylabel('Pressure signal')
@@ -189,6 +190,8 @@ for i=1:2
     p(i).P2 = P2;
     p(i).F2 = F2;
     p(i).T2 = T2;
+    p(i).T2date = T2/3600/24 + datetime(datevec(t1a));
+
     p(i).mask = mask;
 end
 for i = [1 4]
@@ -199,6 +202,7 @@ for i = [1 4]
     v(i).P2 = P2;
     v(i).F2 = F2;
     v(i).T2 = T2;
+    v(i).T2date = T2/3600/24 + datetime(datevec(t1a));
     v(i).tmask = mask;
 
 end
@@ -224,7 +228,7 @@ t=tiledlayout(6,1,'TileSpacing','tight');
 fontsize=14;
 h=[];
 nexttile(t);
-pchan = 1;
+pchan = 2;
 mask = p(pchan).mask;
 tplot = p(pchan).ts( mask );
 pplot = calibrate_p(p(pchan).d(mask));
@@ -276,5 +280,122 @@ hcb.Label.String = 'PSD (dB/Hz)';
 xlabel('Time (s)')
 ylabel('Frequency (Hz)')
 set(gcf,'Color','white')
+linkaxes(h,'x')
+% exportgraphics(t,['Spectrogram_' num2str(window_size) '.pdf'])%,'ContentType','vector')
 
-exportgraphics(t,['Spectrogram_' num2str(window_size) '.pdf'])%,'ContentType','vector')
+%% make a plot of the pressure timeseries and filtered versions
+f_vlp = designfilt('lowpassfir','StopbandFrequency',0.5,...
+    'PassbandFrequency',0.4,'StopbandAttenuation',80,'SampleRate',250);
+% f_bp = designfilt('lowpassfir','StopbandFrequency',1.0,...
+    % 'PassbandFrequency',0.5,'StopbandAttenuation',80,'SampleRate',250);
+f_bp = designfilt('bandpassfir','StopbandFrequency1',0.3,'PassbandFrequency1',0.5,'PassbandFrequency2',4,'StopbandFrequency2',5,'StopbandAttenuation1',60,'PassbandRipple',1,'StopbandAttenuation2',60,'SampleRate',250,'DesignMethod','equiripple');
+
+%% 
+figure();
+t = tiledlayout(4,1);
+nexttile()
+
+mask = p(pchan).mask;
+tplot = p(pchan).ts( mask );
+pplot = calibrate_p(p(pchan).d(mask));
+plot(tplot,pplot);
+
+h = [];
+h(1) = gca();
+
+pfilt = filtfilt(f_vlp,pplot);
+% pfilt = lowpass(pplot,0.1,fs);
+nexttile();
+plot(tplot,pfilt);
+h(2) = gca();
+
+nexttile();
+plot(tplot,pplot);hold on
+php = highpass(pplot,1.0,fs);
+plot(tplot,php,'r');
+h(3) = gca();
+
+linkaxes(h,'x');
+%% test
+figure();
+
+
+%% Make a final figure showing
+f=figure('Units','inches','Position',[1,1,5.5,6.0]);
+t=tiledlayout(5,1,'TileSpacing','tight','Padding','none',...
+    'Units','inches','OuterPosition',[0 0 5.5 6.0]);
+%(a) zoom-in on timeseries
+nexttile(t);
+t1 = 1055;
+t2 = 1080;
+mask = p(pchan).ts >= t1 & p(pchan).ts <= t2;
+tplot = p(pchan).tdate(mask);
+pplot = calibrate_p(p(pchan).d(mask));
+plot(tplot,pplot,'k');
+tplot1 = tplot(1);
+tplot2 = tplot(end);
+set(gca,'XTickLabel',[]);
+set(gca,'YTick',10:15)
+ax = [];
+ax(1) = gca;
+ylabel('Level (m)')
+text(0.01,0.8,'A','Units','normalized','FontSize',14)
+
+
+% (b) filtered timeseries
+nexttile();
+pfilt = filtfilt(f_bp,calibrate_p(p(pchan).d));
+pfilt = pfilt(mask);
+plot(tplot,pfilt,'k');
+ax(2) = gca;
+linkaxes(ax,'x');
+ylabel('Level (m)')
+set(gca,'XLim',[tplot1 tplot2])
+text(0.01,0.8,'B','Units','normalized','FontSize',14)
+
+%(c) timeseries
+nexttile(t);
+t1a=datenum(1994, 10, 20, 18, 08, 00);
+t2a=datenum(1994, 10, 20, 18, 16, 00);
+mask = p(pchan).t > t1a & p(pchan).t < t2a;
+tplot = p(pchan).tdate(mask);
+pplot = calibrate_p(p(pchan).d(mask));
+hl=plot(tplot,pplot,'k'); hold on
+h=[];
+h(1) = gca();
+set(gca,'YTick',10:15);
+set(gca,'XTickLabel',[]);
+lims = get(gca,'YLim');
+area([tplot1 tplot2],[lims(2) lims(2)],lims(1),'FaceColor',0.8*[1 1 1],'EdgeColor','none');
+% plot([tplot1 tplot1],[lims(1) lims(2)],'Color',[1 1 1]*0.5);
+% plot([tplot2 tplot2],[lims(1) lims(2)],'Color',[1 1 1]*0.5);
+delete(hl);
+plot(tplot,pplot,'k');
+
+ylabel('Level (m)')
+text(0.01,0.8,'C','Units','normalized','FontSize',14)
+uistack(gca,'top')
+
+%(d) spectrogram
+nexttile(t,[2 1])
+fmask = p(pchan).F2 >= 0.9e-1 & p(pchan).F2 <= 1e2;
+pcolor(p(pchan).T2date,p(pchan).F2(fmask),10*log10( p(pchan).P2(fmask,:)) );
+shading flat;
+colormap turbo
+hcb=colorbar();
+hcb.Label.String = 'PSD (db/Hz)';
+set(gca,'CLim',[-150 -60])
+% colormap parula;
+set(gca,'YScale','log')
+h(2) = gca();
+linkaxes(h,'x');
+set(gca,'YLim',[1e-1 1e2]);
+
+set(gca,"XLim",[p(pchan).T2date(1) p(pchan).T2date(end)])
+set(gca, 'layer', 'top');
+ylabel('Frequency (Hz)')
+text(0.01,0.9,'D','Units','normalized','FontSize',14)
+
+% note that this can be very slow:
+%exportgraphics(t,'OFG_Pressure.pdf','ContentType','vector')
+% exportgraphics(t,'OFG_Pressure.pdf')

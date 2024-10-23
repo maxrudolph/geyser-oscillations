@@ -12,9 +12,9 @@ par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
-par.H = 7;
-par.sl=0.1;
-par.L=0;
+par.H = 8;
+par.sl=1;
+par.L=5;
 
 nx=100;
 delta = 1e-6;%bar
@@ -61,24 +61,27 @@ for a=1:nx
 end
 %% 
 figure;
-contourf(xx,yy,log10(freq),1024,'Color','none');
+contourf(xx,yy,(freq),1024,'Color','none');
+set(gca,'ColorScale','log')
 hold on
 hcb=colorbar;
-contour(xx,yy,log10(freq),log10(1.0)*[1 1],'Color','k');
+% 1 Hz contour
+contour(xx,yy,(freq),[0.1 0.2 0.5 0.8 1 1.5 2],'Color','k','ShowText','on');
+fn = get(gca,'FontName')
 set(gca,'FontSize',16);
-xlabel('$H-\bar{x}$ (m)','Interpreter','latex');
+xlabel('${H}-\bar{x}$ (m)','Interpreter','latex','FontName',fn);
 ylabel('$\bar{y}$ (m)','Interpreter','latex');
-hcb.Label.String = 'log_{10} (frequency, Hz)';
+hcb.Label.String = 'Frequency (Hz)';
 hcb.Label.FontSize=16;
 set(gcf,'Color','w');
 set(gca,'XScale','log');
-% saveas(gcf,'ofg_application.svg');
-%export_fig('ofg_application.eps');
+%saveas(gcf,'ofg_application.svg');
+export_fig('ofg_application.eps');
 
 
 %% Now, solve the ODE directly for ofg.
-p.Sb=Sb;
-p.Sc=Sc;
+p.Sb=par.sb;
+p.Sc=par.sc;
 p.ybar = 20;
 p.H = 7;
 p.xbar = p.H-.01;

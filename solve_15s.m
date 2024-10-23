@@ -16,10 +16,9 @@ switch model
         vdot = @(t,z) IG_RHS(t,z,par);
 end
 %set initial conditions
-z0= [numPar.x0;numPar.v0];
-op=odeset('RelTol',1e-10,'AbsTol',1e-12);
+z0= [numPar.x0;numPar.v0]; % initial displacement, velocity
+op=odeset('RelTol',1e-12,'AbsTol',1e-12,'InitialStep',1e-6);
 %%Solving EOM
-%pass parameters into vdot equation easily
 [ts,ys] = ode45(vdot,t,z0,op);
 xs = ys(:,1);vs = ys(:,2);
 

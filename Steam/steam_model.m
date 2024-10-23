@@ -8,8 +8,8 @@ reps = 3; %number of delta values to solve for
 numerical_frequency = zeros(1,reps);
 anfreq = zeros(1,reps);
 maxfreq = zeros(1,reps);
-fill = 0.9; %fraction of chamber above lateral connector that contains water
-geom=0;
+fill = 1-.05; %fraction of chamber above lateral connector that contains water
+geom=1;
 switch geom
     case 0
         fprintf('Using laboratory dimensions. \n');
@@ -23,14 +23,15 @@ switch geom
         x0= [5e-4,1e-3,2e-3]; %initial displacement in m
     case 1
         fprintf('Using Old Faithful''s dimensions. \n ')
-        par.sb = 80; % cross-section of bubble trap in m^2
+        par.sb = 300; % cross-section of bubble trap in m^2
         par.sc = 1; % cross-section of geyser column in m^2
-        par.H = 7; % height of bubble trap in m
-        par.L = 15; % length of lateral connector in m
-        par.sl = 7; %cross-section of lateral connector in m^2
+        par.H = 8; % height of bubble trap in m
+        par.L = 0; % length of lateral connector in m
+        par.sl = 0.1; %cross-section of lateral connector in m^2
         par.xbar = fill*par.H; %mean water height in bubble trap in m, must be in (0,H)
-        numPar.x0= -par.sc/par.sb; %initial displacement in m
-        delxys = linspace(0,par.H-par.xbar,reps);
+        % par.x0= -par.sc/par.sb; %initial displacement in m
+        delxys = [25 25 25];%linspace(0,20,reps);
+        x0=-[1e-4,5e-4,1e-3,1e-2];
 end
 
 par.g = 9.81;% gravitational acceleration in m*s^-2
@@ -40,55 +41,81 @@ par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
 ybars = delxys+par.xbar; %mean water height in conduit in m, must be greater than Sb/Sc*x0
 numPar.v0= 0; %initial velocity in m/s
-numPar.tf = 5;
-figure;
+numPar.tf = 30;
+figure(101); clf;
 
 for k = 1:reps
     par.ybar = ybars(k);
-    par.delxy = delxys(1);
+    par.delxy = delxys(k);
     numPar.x0 = x0(k);
     %% Make a lookup table with pre-computed thermodynamic properties.
     par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
     P_0 = par.rho*par.g*(par.delxy)+par.Pa0; %initial pressure in (Pascal)
     par.m=par.Vol_0 / XSteam('vV_p', P_0/1e5); %vapor mass in kg
 
-    xv = 1 - 1e-2;
+    xv = 1 - 5e-1;
     sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
     sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
     s = xv*sv + (1-xv)*sl; % gives specific entropy of water+vapor mixture in J/kg/C
     V0 = XSteam('V_ps',P_0/1e5,s/1e3); % volume per unit mass
     par.m = par.Vol_0 / V0;
 
-    P=linspace((P_0-9e4)/1e5,(P_0+1e5)/1e5,101); %Range of pressure for lookup table (bar)
+    P=linspace(1.01e5/1e5,(P_0+10e5)/1e5,1001); %Range of pressure for lookup table (bar)
     vV=zeros(1,length(P));  % vapor volume (m^3)
     du_dp = zeros(1,length(P)); %dU/dP in (kJ/K/Pa)
     dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
-    xS = zeros(1,length(P));
-    T = zeros(1,length(P));
+    xS = zeros(1,length(P)); % vapor fraction
+    T = zeros(1,length(P)); % Temperature
     for i=1:length(P)
-        vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
+        vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3 (specific volume x mass)
         xS(i) = XSteam('x_ps',P(i),s/1e3); %vapor fraction (unitless)
         T(i) = XSteam('Tsat_p',P(i)); % temperature in degree C
-        delta = 1e-6;%bar
+        delta = sqrt(eps(P(i)));%1e-8;%bar
         du_dp(i) = (XSteam('u_ps',P(i)+delta,s/1e3)-XSteam('u_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
         dv_dp(i) = (XSteam('v_ps',P(i)+delta,s/1e3)-XSteam('v_ps',P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/Pa
     end
-
-
+    
     [~,i] = sort(vV);
     par.Fdudp = griddedInterpolant(vV(i),du_dp(i),'linear','none');
     par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i),'linear','none');
-
+    
     [t1,x1,v1] = solve_15s(0,par,numPar);
+
+    % reconstruct pressure, temperature for the time series
+    V1 = (par.H-(par.xbar+x1))*par.sb;
+    P1 = interp1(vV(i),P(i),V1);
+    T1 = interp1(vV(i),T(i),V1);
+    X1 = interp1(vV(i),xS(i),V1);
 
     %Plotting
     %set(gca,'BackgroundColor,','None')
-    plot(t1,x1);
+    figure(101);
+    plot(t1,x1,'.');
     title('Solution x(t) of IVP (m)')
     xlabel('Time (sec)'); grid on
     ylabel('X (m)');hold on;
     fontsize(gcf,24,"points");
 
+    figure(102);
+    subplot(4,1,1);
+    plot(t1,-par.sb/par.sc*x1,'.');
+    title('Solution y(t) of IVP (m)')
+    xlabel('Time (sec)'); grid on
+    ylabel('Y (m)');hold on;
+    fontsize(gcf,24,"points");
+    subplot(4,1,2);
+    plot(t1,P1);
+    hold on
+    ylabel('Pressure (bar)')
+    % plot(t1,)
+    subplot(4,1,3);
+    plot(t1,T1);
+    hold on
+    ylabel('T (C)')
+    subplot(4,1,4);
+    plot(t1,X1);
+    hold on
+    ylabel('X')
 %     figure();
 %     plot(x1,v1);
 %     title("Phase Diagram of IVP");

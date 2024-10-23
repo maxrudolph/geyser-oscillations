@@ -9,6 +9,7 @@ p_amb = 1.03707;
 % sensors_plot = [1 2 3 4 5];
 % filename = '06-19-2024/ConeEruption_AllHeaters_1Lpmin-20240619-17-00-56'
 % calibration_file = '06-19-2024/calibration-06-19-2024.mat'
+
 filename = '06-20-2024/ConeEruptionTopConstriction_1p2LpMin_AllHeaters_-20240620-15-17-17';
 calibration_file = '06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat';
 
@@ -108,10 +109,40 @@ end
 legend();
 title('Temperature (C)')
 
+%% Set up parameters for lab geyser
+geometry = 1;
+conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
+par = struct(); % initialize structure
+par.g = 9.81;% gravitational acceleration in m*s^-2
+par.rho = 1000; % water density in kg*m^-3
+% par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
+% par.alpha = 5/2; %diatomic ideal gas constant - unitless
+par.Pa0 = p_amb*1e5; %atmospheric pressure at equilibrium in Pa
+
+switch conduit_diameter
+    case 1
+        par.sc = pi*(1/2*2.54/100)^2; %cross-section of 1-inch tube in cm^2
+        par.H = 31.8e-2; % "new" short 1 inch pickup in m
+        %par.H = 58e-2; % old, longer 1 inch pickup in m
+    case 2
+        par.sc = pi*(2/2*2.54/100)^2; %cross-section of 2-inch tube in cm^2
+        par.H = (53-1.8)*1e-2; %Bubble trap height in m
+end
+switch geometry
+    case 1
+        fprintf('Using new lab dimensions. \n')
+        par.sb = 1852e-4;
+        par.sl = 1; %cross-section of lateral connector in m^2
+        par.L = 0; % length of lateral connector
+end
+conduit_level = water_level(1,:);
+tank_level = -(water_level(2,:) - water_level(1,:)); % measured upward from bottom of tank
+
+
 %% Spectrogram
 addpath Steam/
 addpath XSteam_Matlab_v2.6/
-for inst=sensors_plot
+for inst=[3]%sensors_plot
     window_s = 30; % length of window, in seconds
     step_s = 30;
     % inst=4;
@@ -126,7 +157,8 @@ for inst=sensors_plot
     % arrays to hold predicted frequencies
     frequencies = zeros(size(window_start));
     uncertainties = zeros(size(window_start));
-
+    f_acoustic = zeros(4,Nwin);
+    cs = zeros(size(window_start));
     Pxx = zeros();
     % get spectra for discrete time windows
 
@@ -136,12 +168,43 @@ for inst=sensors_plot
         mask = td>= win_start & td <= win_start+window_s;
 
         % set xbar and ybar
-        % par.xbar = mean(tank_level(mask)) - (tank_height-par.H);
-        % par.ybar = mean(conduit_level(mask)) - (tank_height-par.H);
-        % par.delxy = par.ybar-par.xbar;
-        % [f,u]=steam_frequency(par);
-        % frequencies(iwin) = f;
-        % uncertainties(iwin) = u;
+        % tank_level = -(P(2,:) - P(1,:))*1e5/1000/9.81;
+        tank_height = 0.76;% internal height of tank, in m.
+
+        
+        par.xbar = mean(tank_level(mask)) - (tank_height-par.H);
+        par.ybar = mean(conduit_level(mask)) - (tank_height-par.H);
+        par.delxy = par.ybar-par.xbar;
+        if ~isnan(par.xbar)
+            [f,u]=steam_frequency(par);
+            if imag(f) ~= 0
+                keyboard;
+            end
+            frequencies(iwin) = f;
+            uncertainties(iwin) = u;
+        else
+            frequencies(iwin) = NaN;
+            uncertainties(iwin) = NaN;
+        end
+        %acoustic modes
+        % compute sound speed   
+        cs(iwin) = XSteam('w_pT', mean(Pd(inst,mask)),mean(Td(inst,mask)));
+
+        % f_acoustic(:,iwin) = [1 3 5 7].*cs(iwin)./(4*(mean(conduit_level(mask))+(tank_height-par.H)));
+        L = mean(conduit_level(mask)) + (tank_height-par.H);       
+        f_acoustic(:,iwin) = (2*[1 2 3 4]-1) * cs(iwin) / (4*L); % forced at one end, closed at the other
+
+        % forced at one end, open at the other
+        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi)
+        % f_acoustic(:,iwin) = [1 2 3 4] * cs(iwin) / (2 * (L + 0.6*a)); 
+
+        %Helmholtz resonator - doesn't do a good job.
+        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi) - radius of resonant cavity
+        % Lprime = mean(conduit_level(mask)) + 1.4*a;
+        % V = mean(tank_level(mask))*par.sb;
+        % omega_0 = cs(iwin) * sqrt(par.sc/Lprime/V);
+        % f_acoustic(1,iwin) = omega_0/(2*pi);
+
 
         % compute a spectrogram
         win_Pd = decimate(detrend(Pd(inst,mask)),dec); % decimate sensor (inst) by decimation factor.
@@ -195,5 +258,8 @@ for inst=sensors_plot
     plot(window_start,frequencies,'k','LineWidth',1.5);
     plot(window_start,frequencies+uncertainties,'k--')
     plot(window_start,frequencies-uncertainties,'k--')
+
+    plot(window_start,f_acoustic,'k');
+
     linkaxes([ax1,ax2],'x');
 end

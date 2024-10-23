@@ -12,7 +12,7 @@ function [frequency,uncertainty] = steam_frequency(par)
 % rho
 % Pa0
 
-delta = 1e-6; % step size for finite difference calculation.
+delta = 1e-3; % step size for finite difference calculation.
 
 %% Make a lookup table with pre-computed thermodynamic properties.
 par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
