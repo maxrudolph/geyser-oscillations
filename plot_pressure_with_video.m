@@ -34,7 +34,8 @@ sensors_plot = [1 2 3 4 5 6];
 filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/cone-topconstriction-try3-20241120-15-33-06'
 calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank_Room988p87-20241120.mat'
 p_amb = 0.98887;
-
+load 32216_F6_35_velocities.mat
+velo_start_guess = 215.943;
 
 load(calibration_file)
 
@@ -56,8 +57,60 @@ td = dt*(0:(size(Pd,2)-1));
 clear P T;
 
 %% 
+% correlate velocity with pressure
+velo_dt = velo.t(2)-velo.t(1);
+p_dt = td(2)-td(1);
+% interp velo onto p spacing
+tv = velo.t(1):p_dt:velo.t(end);
+velo1 = interp1(velo.t,velo.vmed,tv);
+[~,ind] = min(abs(td-velo_start_guess)); % this is the index corresponding to the guessed location
+% select pressure component
+thisp = Pd(4,ind:ind+length(velo1)-1); % use sensor 4 - top of conduit
+% corr(thisp,velo1);
+[r,lags] = xcorr(thisp,velo1,10000,'normalized');
+figure, plot(lags,r);
+[maxr,ind1] = max(r);
+best_lag = lags(ind1);
+velo_start_optimized = td(ind)+best_lag*p_dt;
+
+figure();
+subplot(2,1,1);
+plot(td,Pd(4,:));
+ax1 = gca();
+ylabel('Pressure 4 (bar)')
+
+subplot(2,1,2);
+plot(tv+velo_start_optimized,velo1);
+ax2 = gca();
+ylabel('Velocity (m/s)')
+xlabel('Time (s)')
+linkaxes([ax1 ax2],'x');
+
+%% plot all three conduit pressure signals with velocity
+figure();
+subplot(4,1,1);
+plot(tv+velo_start_optimized,velo1);
+ylabel('Velocity (m/s)')
+clear ha;
+ha(1) = gca();
+sensor_order = [4 5 3];% top, mid, bottom
+for i=1:3
+    subplot(4,1,i+1);
+    plot(td,Pd(sensor_order(i),:));
+    ylabel(['Pressure ' num2str(sensor_order(i))]);
+    ha(2+i) = gca();
+end
+xlabel('Time (s)');
+linkaxes(ha,'x');
+
+
+%% 
 figure();
 subplot(3,1,1);
+plot(velo.t+velo_start_guess,velo.vmed,'DisplayName','median v');
+ha(1) = gca();
+
+subplot(3,1,2);
 for i=sensors_plot
     label = sprintf('P%d-%d',i,header.pressure_sensor_serial_numbers(i));
     h(i) = plot(td,Pd(i,:)-p_amb,'DisplayName',label);
@@ -75,6 +128,7 @@ for i=sensors_plot
 end
 title('Pressure Histogram')
 xlabel('Pressure (bar)')
+ha(2) = gca();
 
 subplot(3,1,3);
 for i=sensors_plot
@@ -84,6 +138,8 @@ for i=sensors_plot
 end
 legend();
 title('Temperature (C)')
+ha(3) = gca();
+linkaxes(ha,'x');
 
 %% plot using water equivalent
 T_sensor = 2;

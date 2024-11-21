@@ -33,6 +33,10 @@ else
     load('calibration_05222024.mat');        
 end
 
+p_amb = 0.98989;
+filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/Eruption_Pool_TopConstriction_try2-20241118-14-24-43'
+calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/calibration-EmptyTank-Room989p89-20241118-12-28-55.mat'
+
 inst=1; % sensor # for spectrogram
 
 % is data already loaded?
@@ -42,7 +46,7 @@ if ans ~= 1
     
     pamb = 1.0110777892; % calibration day (5/22) 29.85711 in Hg
     % iS = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00.bin']
-    iS = ['05-22-2024-calibration/sensor_test_full_tank-20240522-17-52-00.bin']
+    iS = ['/Volumes/GeyserData/NSFGeyserProject/SensorData/05-22-2024-calibration/sensor_test_full_tank-20240522-17-52-00.bin']
 
     % pamb=1.01364772;	% ambient pressure, bar (5/30)
     % iS = ['05-30-2024/HeatingUp_fulltank-20240530-14-38-13.bin']    

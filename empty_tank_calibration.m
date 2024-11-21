@@ -14,10 +14,32 @@ close all
 % filename = ['06-20-2024/EmptyTank_RP1036p83-20240620-09-46-40'];
 % output_filename = ['06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat']
 
-pamb = 1.03263;
-filename = '06-21-2024/EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58'
-output_filename = ['06-21-2024/calibration-EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58.mat']
-sensor_plot =1:6;
+% pamb = 1.03263;
+% filename = '06-21-2024/EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58'
+% output_filename = ['06-21-2024/calibration-EmptyTank_S5inConstOnTop_RP1032p63mv-20240621-09-45-58.mat']
+% sensor_plot =1:6;
+
+% pamb = 1.01901;
+% filename = '10-25-2024/calibration_1019p01-20241025-10-14-35'
+% output_filename = ['10-25-2024/calibration-EmptyTank_1019p01-20241025-10-14-35.mat']
+
+% pamb = 0.99423;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-08/calibration_Room_994p23-20241108-10-34-34';
+% output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-08/calibration-EmptyTank_0994p23-11-08-2024'
+
+% pamb=0.98989;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/Calibration_Room989p89-20241118-12-28-54'
+% output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/calibration-EmptyTank-Room989p89-20241118-12-28-55'
+
+% pamb=0.99382;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-19-2024/Calibration_Room993p82-20241119-10-23-10'
+% output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-19-2024/calibration-EmptyTank_Room993p82-20241119-10-23-10.mat'
+
+pamb = 0.98887;
+filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank-Room988p87-20241120-10-19-34';
+output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank_Room988p87-20241120';
+
+sensor_plot=1:6;
 
 % sensor_plot = [1 2 3 5 6]
 % calibration table, with temperature values:

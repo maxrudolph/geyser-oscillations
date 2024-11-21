@@ -1,8 +1,11 @@
 clear
 close all
+addpath XSteam_Matlab_v2.6/
+addpath Steam/
+
 
 % load and plot lab data with calibrations...
-p_amb = 1.03707;
+% p_amb = 1.03707;
 % filename = ['06-18-2024-calibration/NewSensorTests_WaterLevel69p0_Room1033p77-20240618-15-54-04']
 % filename = '06-19-2024/AddingWaterFromTop_1p5kWheat_RP1036p70-20240619-14-49-00';
 % calibration_file = 'calibration-test.mat';
@@ -10,8 +13,23 @@ p_amb = 1.03707;
 % filename = '06-19-2024/ConeEruption_AllHeaters_1Lpmin-20240619-17-00-56'
 % calibration_file = '06-19-2024/calibration-06-19-2024.mat'
 
-filename = '06-20-2024/ConeEruptionTopConstriction_1p2LpMin_AllHeaters_-20240620-15-17-17';
-calibration_file = '06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat';
+p_amb = 1.03683;
+filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-20-2024/ConeEruptionTopConstriction_1p2LpMin_AllHeaters_-20240620-15-17-17';
+calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat';
+
+% calibration_file = '10-25-2024/calibration-EmptyTank_1019p01-20241025-10-14-35.mat'
+% filename = '10-25-2024/MidConstriction_Cone_Stage1-20241025-11-44-34'
+% filename = '10-25-2024/MidConstriction_Cone_Stage5-20241025-14-19-02'
+
+% p_amb = 0.99423;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-08-2024/cycles_no_constrictions-20241108-12-10-06'
+% calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-08-2024/calibration-EmptyTank_0994p23-11-08-2024.mat'
+
+
+% p_amb = 0.98989;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/Eruption_Pool_TopConstriction_try2-20241118-14-24-43'
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/AbovePoolCone_BelowPoolConstriction_try1-20241118-15-43-22'
+% calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-18-2024/calibration-EmptyTank-Room989p89-20241118-12-28-55.mat'
 
 sensors_plot = [1 2 3 4 5 ];
 % p_amb = 0;
@@ -26,23 +44,25 @@ nsensor = length(header.pressure_sensor_serial_numbers);
 t = (1:size(P,2))/fs;
 
 %%
-dec = 1;
-n1 = length( decimate(P(1,:),dec));
+dec = 10;
+n1 = length( decimate(double(P(1,:)),dec));
 Pd = zeros(size(P,1),n1);
 Td = Pd;
 for i=1:size(P,1)
-    Td(i,:) = decimate(T(i,:),dec);
-    Pd(i,:) = decimate(P(i,:),dec);
+    Td(i,:) = decimate(double(T(i,:)),dec);
+    Pd(i,:) = decimate(double(P(i,:)),dec);
 end
 fsd = fs/dec;
 td = (1:size(Pd,2))/fsd;
+
+clear P T;
 
 %%
 figure();
 subplot(3,1,1);
 for i=sensors_plot
     label = sprintf('P%d-%d',i,header.pressure_sensor_serial_numbers(i));
-    h(i) = plot(P(i,:)-p_amb,'DisplayName',label);
+    h(i) = plot(Pd(i,:)-p_amb,'DisplayName',label);
     hold on
 end
 legend();
@@ -51,8 +71,8 @@ ylabel('Pressure (bar)')
 
 subplot(3,1,2);
 for i=sensors_plot
-    [f,xi] = ksdensity(P(i,:)-p_amb);
-    plot(xi,f,'Color',get(h(i),'Color'));
+    % [f,xi] = ksdensity(Pd(i,:)-p_amb);
+    % plot(xi,f,'Color',get(h(i),'Color'));
     hold on
 end
 title('Pressure Histogram')
@@ -61,7 +81,7 @@ xlabel('Pressure (bar)')
 subplot(3,1,3);
 for i=sensors_plot
     label = sprintf('T%d-%d',i,header.pressure_sensor_serial_numbers(i));
-    plot(T(i,:),'DisplayName',label);
+    plot(Td(i,:),'DisplayName',label);
     hold on
 end
 legend();
@@ -69,14 +89,14 @@ title('Temperature (C)')
 
 %% plot using water equivalent
 T_sensor = 4;
-T_tank = T(T_sensor,:);
-T_lookup = linspace(10,105,1000);
+T_tank = Td(T_sensor,:);
+T_lookup = linspace(10,110,1000);
 for i=1:1000
     rho_lookup(i) = XSteam('rhol_T',T_lookup(i));
 end
 rho_timeseries = interp1(T_lookup,rho_lookup,T_tank);
 
-water_level = (P-p_amb)*1e5/9.81./rho_timeseries;
+water_level = (Pd-p_amb)*1e5/9.81./rho_timeseries;
 % mean_others = mean(mean(water_level(2:6),2));
 % water_level = water_level-mean_others;
 
@@ -103,7 +123,7 @@ xlabel('Level (m)')
 subplot(3,1,3);
 for i=sensors_plot
     label = sprintf('T%d-%d',i,header.pressure_sensor_serial_numbers(i));
-    plot(T(i,:),'DisplayName',label);
+    plot(Td(i,:),'DisplayName',label);
     hold on
 end
 legend();
@@ -143,10 +163,10 @@ tank_level = -(water_level(2,:) - water_level(1,:)); % measured upward from bott
 addpath Steam/
 addpath XSteam_Matlab_v2.6/
 for inst=[3]%sensors_plot
-    window_s = 30; % length of window, in seconds
-    step_s = 30;
+    window_s = 10; % length of window, in seconds
+    step_s = 5;
     % inst=4;
-    dec = 1;
+    dec = 1; % this is an additional decimation beyond the first decimation.
     td = (1:size(Pd,2))*(1/fsd);
     t1p = 0;
     t2p = td(end)-window_s;
@@ -177,34 +197,15 @@ for inst=[3]%sensors_plot
         par.delxy = par.ybar-par.xbar;
         if ~isnan(par.xbar)
             [f,u]=steam_frequency(par);
-            if imag(f) ~= 0
-                keyboard;
-            end
+            % if imag(f) ~= 0
+                % keyboard;
+            % end
             frequencies(iwin) = f;
             uncertainties(iwin) = u;
         else
             frequencies(iwin) = NaN;
             uncertainties(iwin) = NaN;
         end
-        %acoustic modes
-        % compute sound speed   
-        cs(iwin) = XSteam('w_pT', mean(Pd(inst,mask)),mean(Td(inst,mask)));
-
-        % f_acoustic(:,iwin) = [1 3 5 7].*cs(iwin)./(4*(mean(conduit_level(mask))+(tank_height-par.H)));
-        L = mean(conduit_level(mask)) + (tank_height-par.H);       
-        f_acoustic(:,iwin) = (2*[1 2 3 4]-1) * cs(iwin) / (4*L); % forced at one end, closed at the other
-
-        % forced at one end, open at the other
-        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi)
-        % f_acoustic(:,iwin) = [1 2 3 4] * cs(iwin) / (2 * (L + 0.6*a)); 
-
-        %Helmholtz resonator - doesn't do a good job.
-        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi) - radius of resonant cavity
-        % Lprime = mean(conduit_level(mask)) + 1.4*a;
-        % V = mean(tank_level(mask))*par.sb;
-        % omega_0 = cs(iwin) * sqrt(par.sc/Lprime/V);
-        % f_acoustic(1,iwin) = omega_0/(2*pi);
-
 
         % compute a spectrogram
         win_Pd = decimate(detrend(Pd(inst,mask)),dec); % decimate sensor (inst) by decimation factor.
@@ -220,12 +221,35 @@ for inst=[3]%sensors_plot
 
         % y=P(3,t1+(n-1)*winlens*Fs:t1+n*winlens*Fs);
         % watlev(n)=80+(mean(y')-pamb)/9.81e-04;	% water level, cm
-
-
-        % figure()
-        % plot(t(mask),tank_level(mask))
     end
+    %% model predictions - acoustic modes:
+    iwin = 0;
+    for win_start = window_start
+        iwin = iwin + 1;
+        mask = td>= win_start & td <= win_start+window_s;
 
+        tank_height = 0.76;% internal height of tank, in m.
+
+        %acoustic modes
+        % compute sound speed   
+        cs(iwin) = XSteam('w_pT', mean(Pd(inst,mask)),mean(Td(inst,mask)));
+        this_tank_level = mean(water_level(1,mask));
+        % f_acoustic(:,iwin) = [1 3 5 7].*cs(iwin)./(4*(mean(conduit_level(mask))+(tank_height-par.H)));
+        L = (mean(conduit_level(mask)) + this_tank_level+0)*1.2 + 0.0;       
+        % f_acoustic(:,iwin) = (2*[1 2 3 4]-1) * cs(iwin) / (4*L); % forced at one end, closed at the other
+        f_acoustic(:,iwin) = ([1 2 3 4]) * cs(iwin) / (4*L); % forced at one end, closed at the other
+        % forced at one end, open at the other
+        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi)
+        % f_acoustic(:,iwin) = [1 2 3 4] * cs(iwin) / (2 * (L + 0.6*a)); 
+
+        %Helmholtz resonator - doesn't do a good job.
+        % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi) - radius of resonant cavity
+        % Lprime = mean(conduit_level(mask)) + 1.4*a;
+        % V = mean(tank_level(mask))*par.sb;
+        % omega_0 = cs(iwin) * sqrt(par.sc/Lprime/V);
+        % f_acoustic(1,iwin) = omega_0/(2*pi);
+    end
+    % make the figure
     figure()
     set(gcf,'name',['Sensor ' num2str(inst)]);
     mask = td>=t1p & td<=t2p;
@@ -237,7 +261,7 @@ for inst=[3]%sensors_plot
     ax1=subplot(4,1,2:4);
     pcolor(window_start,(f),log10(Pxx'));%,'edgecolor','none');
     set(gca,'YScale','log');
-    set(gca,'ColorScale','log');
+    set(gca,'ColorScale','linear');
     shading flat
     % view(0,90);
     % set(gca,'YLim',[-0.7 2]);
