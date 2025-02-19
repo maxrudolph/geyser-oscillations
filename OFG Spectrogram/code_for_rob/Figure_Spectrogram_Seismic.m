@@ -179,8 +179,8 @@ xlabel('Frequency (Hz)');
 ylabel('Power (db/Hz)?')
 
 %% compute spectrograms for pressure and vertical component broadband
-window_size=fs*1*30;
-overlap = window_size*0.95;
+window_size=fs*1*120;
+overlap = window_size*100/120;%window_size*0.95;
 % t1a and t2a are set in the previous cell.
 for i=1:2
     mask = p(i).t >= t1a & p(i).t <= t2a;
@@ -284,12 +284,13 @@ linkaxes(h,'x')
 % exportgraphics(t,['Spectrogram_' num2str(window_size) '.pdf'])%,'ContentType','vector')
 
 %% make a plot of the pressure timeseries and filtered versions
-f_vlp = designfilt('lowpassfir','StopbandFrequency',0.5,...
-    'PassbandFrequency',0.4,'StopbandAttenuation',80,'SampleRate',250);
-% f_bp = designfilt('lowpassfir','StopbandFrequency',1.0,...
+if ~exist('f_vlp')
+    f_vlp = designfilt('lowpassfir','StopbandFrequency',0.5,...
+        'PassbandFrequency',0.4,'StopbandAttenuation',80,'SampleRate',250);
+    % f_bp = designfilt('lowpassfir','StopbandFrequency',1.0,...
     % 'PassbandFrequency',0.5,'StopbandAttenuation',80,'SampleRate',250);
-f_bp = designfilt('bandpassfir','StopbandFrequency1',0.3,'PassbandFrequency1',0.5,'PassbandFrequency2',4,'StopbandFrequency2',5,'StopbandAttenuation1',60,'PassbandRipple',1,'StopbandAttenuation2',60,'SampleRate',250,'DesignMethod','equiripple');
-
+    f_bp = designfilt('bandpassfir','StopbandFrequency1',0.3,'PassbandFrequency1',0.5,'PassbandFrequency2',4,'StopbandFrequency2',5,'StopbandAttenuation1',60,'PassbandRipple',1,'StopbandAttenuation2',60,'SampleRate',250,'DesignMethod','equiripple');
+end
 %% 
 figure();
 t = tiledlayout(4,1);
@@ -384,7 +385,8 @@ shading flat;
 colormap turbo
 hcb=colorbar();
 hcb.Label.String = 'PSD (db/Hz)';
-set(gca,'CLim',[-150 -60])
+set(gca,'ColorScale','log');
+% set(gca,'CLim',[-150 -60])
 % colormap parula;
 set(gca,'YScale','log')
 h(2) = gca();

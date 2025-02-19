@@ -118,7 +118,7 @@ for i=1:DevCount*2
         T(i,:)=(T(i,:)-calibration_table(ind,3))/calibration_table(ind,4)+25;
         P(i,:)=P(i,:)-calibration_table(ind,2);
     else
-        error('sensor not found')
+        error(['sensor not found for sensor ' num2str(header.pressure_sensor_serial_numbers(i))])
     end
 end
 

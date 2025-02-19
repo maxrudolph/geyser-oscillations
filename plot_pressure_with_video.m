@@ -34,7 +34,8 @@ sensors_plot = [1 2 3 4 5 6];
 filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/cone-topconstriction-try3-20241120-15-33-06'
 calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank_Room988p87-20241120.mat'
 p_amb = 0.98887;
-load 32216_F6_35_velocities.mat
+% load 32216_F6_35_velocities.mat
+load ../ava/32216_F6_velocity_from_mp4.mat
 velo_start_guess = 215.943;
 
 load(calibration_file)
@@ -42,7 +43,7 @@ load(calibration_file)
 [header,P,T] = load_sensor_data(filename,calibration_table);
 nsensor = length(header.pressure_sensor_serial_numbers);
 %% 
-dec = 10;
+dec = 1;
 Pd = decimate(double(P(1,:)),dec);
 n1 = length(Pd);
 Pd = zeros(size(P,1),n1);
@@ -89,20 +90,50 @@ linkaxes([ax1 ax2],'x');
 %% plot all three conduit pressure signals with velocity
 figure();
 subplot(4,1,1);
-plot(tv+velo_start_optimized,velo1);
+plot(tv+velo_start_optimized,velo1,'k');
 ylabel('Velocity (m/s)')
 clear ha;
 ha(1) = gca();
 sensor_order = [4 5 3];% top, mid, bottom
+labels = {'Top P (bar)','Mid P (bar)','Bottom P (bar)'}
 for i=1:3
     subplot(4,1,i+1);
-    plot(td,Pd(sensor_order(i),:));
-    ylabel(['Pressure ' num2str(sensor_order(i))]);
-    ha(2+i) = gca();
+    plot(td,Pd(sensor_order(i),:),'k');
+    % ylabel(['Pressure ' num2str(sensor_order(i))]);
+    ylabel(labels{i});
+    ha(1+i) = gca();
 end
+% for i=1:3
+% subplot(7,1,i+4);
+    % plot(td,Td(sensor_order(i),:),'k');
+    % ylabel(['T ' num2str(sensor_order(i))]);
+    % ylabel(labels{i});
+    % ha(4+i) = gca();
+% end
 xlabel('Time (s)');
 linkaxes(ha,'x');
+% set(gca,'XLim',[240.5078  240.7129]); % cool shock feature - for AGU
+% poster
 
+f=gcf;
+f.Position(3:4) = [305 564];
+
+%% plot pressure gradients
+figure()
+subplot(3,1,1)
+plot(tv+velo_start_optimized,velo1,'k');
+ylabel('Velocity (m/s)')
+clear ha;
+ha(1) = gca();
+dp1 = (Pd(4,:)-Pd(5,:))/0.51;
+dp2 = (Pd(5,:)-Pd(3,:))/0.3;
+subplot(3,1,2);
+plot(td,dp1,'k');
+ha(2) = gca();
+subplot(3,1,3);
+plot(td,dp2,'k');
+ha(3) = gca();
+linkaxes(ha,'x');
 
 %% 
 figure();

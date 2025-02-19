@@ -1,26 +1,26 @@
 % Application of geyser model to old faithful
 clear;
-close all;
+% close all;
 addpath XSteam_Matlab_v2.6;
 addpath Ideal_Gas;
 addpath Steam
 %closed = true;
-par.sb = 300;
-par.sc = 1;
+par.sb = 80; % 300 m^2 
+par.sc = 1;   % 1 m^2
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
-par.Pa0 =1e5; %atmospheric pressure at equilibrium in Pa
+par.Pa0 = 1e5; %atmospheric pressure at equilibrium in Pa
 par.H = 8;
 par.sl=1;
 par.L=5;
 
-nx=100;
+nx=150;
 delta = 1e-6;%bar
 %xx = linspace(4,6.999,nx);
-xx = logspace(-3.5,log10(par.H),nx);% actually H-xbar
-ny = 101;
+xx = logspace(-3,log10(par.H),nx);% actually H-xbar
+ny = 151;
 yy = linspace(0,30,ny);
 
 freq = zeros(ny,nx);
@@ -59,24 +59,50 @@ for a=1:nx
         end
     end
 end
+
+%% compute the u-tube freq
+Futube = zeros(ny,nx);
+for a=1:nx
+    for j=1:ny
+        par.xbar = par.H-xx(a);
+        par.ybar = yy(j);
+        par.delxy = par.ybar-par.xbar;
+        LL = par.xbar + par.ybar + par.L;
+        Futube(j,a) = 1/(2*pi)*sqrt(2*9.81/LL);
+    end
+end
+figure, 
+contourf(xx,yy,Futube,1024,'Color','none');
+hold on
+contour_levels = [0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 1.0 1.2 1.4 1.6 1.8 2 4 6 8 10]
+contour(xx,yy,(freq),contour_levels,'Color','k','ShowText','on');
+
+set(gca,'ColorScale','log');
+hold on
+hcb=colorbar;
+
 %% 
 figure;
 contourf(xx,yy,(freq),1024,'Color','none');
-set(gca,'ColorScale','log')
+set(gca,'ColorScale','log');
 hold on
 hcb=colorbar;
 % 1 Hz contour
-contour(xx,yy,(freq),[0.1 0.2 0.5 0.8 1 1.5 2],'Color','k','ShowText','on');
+contour_levels=logspace(-1,2,25);
+contour_levels = [0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 1.0 1.2 1.4 1.6 1.8 2 4 6 8 10]
+contour(xx,yy,(freq),contour_levels,'Color','k','ShowText','on');
 fn = get(gca,'FontName')
 set(gca,'FontSize',16);
-xlabel('${H}-\bar{x}$ (m)','Interpreter','latex','FontName',fn);
+xlabel('${H}-\bar{x}$ (m)','Interpreter','latex');
 ylabel('$\bar{y}$ (m)','Interpreter','latex');
 hcb.Label.String = 'Frequency (Hz)';
 hcb.Label.FontSize=16;
 set(gcf,'Color','w');
 set(gca,'XScale','log');
+set(gca,'XTick',10.^[-3 -2 -1 0 1])
 %saveas(gcf,'ofg_application.svg');
-export_fig('ofg_application.eps');
+% export_fig('ofg_application.eps');
+exportgraphics(gcf,'ofg_application_steam.pdf','ContentType','vector')
 
 
 %% Now, solve the ODE directly for ofg.

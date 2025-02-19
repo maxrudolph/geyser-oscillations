@@ -51,12 +51,16 @@ end
 for i=4:6
     plot(pfilt(i).t,p(i).d);
     set(gca,'XLim',xlim);
+    if i < 6
     nexttile(t);    
+    end
 end
 
 
 
 %% next...
+p1 = p(1);
+p2 = p(2);
 % start time for data
 t0=p1.t(1);
 startime=datevec(t0)

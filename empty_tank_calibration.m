@@ -5,6 +5,15 @@ close all
 % racord and writes out the calibration table to a .mat file.
 
 % Calibration conditions: Pressure in bar:
+% pamb=1.0; % unknown
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-19-2024/EmptyTank_AllSensorsMounted-20240619-10-31-37'
+% output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-19-2024/calibration-EmptyTank_AllSensorsMounted-20240619-10-31-37'
+
+pamb=0.97228; % unknown
+filename ='/Volumes/GeyserData/NSFGeyserProject/SensorData/11-22-2024/calibration_Room972p28-20241122-09-38-22';
+output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-19-2024/calibration-EmptyTank_11222024'
+
+
 % pamb = 1.0110777892; % calibration day (5/22) 29.85711 in Hg
 % Calibration data file:
 % filename = ['05-22-2024-calibration/sensor_test_empty_tank-20240522-17-11-00'];
@@ -35,9 +44,9 @@ close all
 % filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-19-2024/Calibration_Room993p82-20241119-10-23-10'
 % output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-19-2024/calibration-EmptyTank_Room993p82-20241119-10-23-10.mat'
 
-pamb = 0.98887;
-filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank-Room988p87-20241120-10-19-34';
-output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank_Room988p87-20241120';
+% pamb = 0.98887;
+% filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank-Room988p87-20241120-10-19-34';
+% output_filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/11-20-2024/calibration-EmptyTank_Room988p87-20241120';
 
 sensor_plot=1:6;
 

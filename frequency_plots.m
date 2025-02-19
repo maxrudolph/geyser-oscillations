@@ -16,6 +16,7 @@ addpath Steam/
 p_amb = 1.03683;
 filename = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-20-2024/ConeEruptionTopConstriction_1p2LpMin_AllHeaters_-20240620-15-17-17';
 calibration_file = '/Volumes/GeyserData/NSFGeyserProject/SensorData/06-20-2024/calibration-EmptyTank_RP1036p83-20240620-09-46-40.mat';
+dec = 1;
 
 % calibration_file = '10-25-2024/calibration-EmptyTank_1019p01-20241025-10-14-35.mat'
 % filename = '10-25-2024/MidConstriction_Cone_Stage1-20241025-11-44-34'
@@ -44,7 +45,7 @@ nsensor = length(header.pressure_sensor_serial_numbers);
 t = (1:size(P,2))/fs;
 
 %%
-dec = 10;
+% dec = 1;
 n1 = length( decimate(double(P(1,:)),dec));
 Pd = zeros(size(P,1),n1);
 Td = Pd;
@@ -130,7 +131,7 @@ legend();
 title('Temperature (C)')
 
 %% Set up parameters for lab geyser
-geometry = 1;
+geometry = 2;
 conduit_diameter = 1; % 1 -> 1 inch, 2 -> 2 inches
 par = struct(); % initialize structure
 par.g = 9.81;% gravitational acceleration in m*s^-2
@@ -154,6 +155,10 @@ switch geometry
         par.sb = 1852e-4;
         par.sl = 1; %cross-section of lateral connector in m^2
         par.L = 0; % length of lateral connector
+    case 2 % 2024 - metal tank configuration
+        par.sb = pi*0.23^2;
+        par.sl = 5.0671e-04;
+        par.L = 0.1665; % double check
 end
 conduit_level = water_level(1,:);
 tank_level = -(water_level(2,:) - water_level(1,:)); % measured upward from bottom of tank
@@ -224,6 +229,8 @@ for inst=[3]%sensors_plot
     end
     %% model predictions - acoustic modes:
     iwin = 0;
+    tank_levels = zeros(length(window_start),1);
+    conduit_levels = zeros(length(window_start),1);
     for win_start = window_start
         iwin = iwin + 1;
         mask = td>= win_start & td <= win_start+window_s;
@@ -233,10 +240,13 @@ for inst=[3]%sensors_plot
         %acoustic modes
         % compute sound speed   
         cs(iwin) = XSteam('w_pT', mean(Pd(inst,mask)),mean(Td(inst,mask)));
-        this_tank_level = mean(water_level(1,mask));
+        this_tank_level = mean(tank_level(1,mask));
+        tank_levels(iwin) = this_tank_level;
+        conduit_levels(iwin) = mean(conduit_level(mask));
         % f_acoustic(:,iwin) = [1 3 5 7].*cs(iwin)./(4*(mean(conduit_level(mask))+(tank_height-par.H)));
-        L = (mean(conduit_level(mask)) + this_tank_level+0)*1.2 + 0.0;       
+        L = (mean(conduit_level(mask) + par.L) + 0.33*0 + this_tank_level +0 ) + 0.0;       
         % f_acoustic(:,iwin) = (2*[1 2 3 4]-1) * cs(iwin) / (4*L); % forced at one end, closed at the other
+        L = 1.7960*(mean(conduit_level(mask)) - 0.5063);
         f_acoustic(:,iwin) = ([1 2 3 4]) * cs(iwin) / (4*L); % forced at one end, closed at the other
         % forced at one end, open at the other
         % a = sqrt(par.sb/pi);% pi r^2 = sc -> r = sqrt(sc/pi)
@@ -284,6 +294,10 @@ for inst=[3]%sensors_plot
     plot(window_start,frequencies-uncertainties,'k--')
 
     plot(window_start,f_acoustic,'k');
-
+    hcb=colorbar();
+    hcb.Label.String = 'Power (dB/Hz)';
+    clim([-8 -4]);
+    ax1.Position(3) = ax2.Position(3);
+    set(ax2,'XLim',[3200 9500])
     linkaxes([ax1,ax2],'x');
 end
