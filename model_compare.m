@@ -43,22 +43,25 @@ for j =1:length(delxys)
 
         P=linspace((P_0-9e4)/1e5,(P_0+9e4)/1e5,51); %Range of pressure for lookup table (bar)
         vV=zeros(1,length(P));  % vapor volume (m^3)
+        xV=zeros(1,length(P));  % steam quality (-)
         du_dp = zeros(1,length(P)); %dU/dP in (kJ/K/Pa)
         dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
         for i=1:length(P)
             vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
+            xV(i) = XSteam('x_ps',P(i),s/1e3);
             du_dp(i) = (XSteam('u_ps',P(i)+delta,s/1e3)-XSteam('u_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
             dv_dp(i) = (XSteam('v_ps',P(i)+delta,s/1e3)-XSteam('v_ps',P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/Pa
         end
-    [~,i] = sort(vV);
-    par.Fdudp = griddedInterpolant(vV(i),du_dp(i),'linear','none');
-    par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i),'linear','none');
+        assert( all(xV>0.0));
+        [~,i] = sort(vV);
+        par.Fdudp = griddedInterpolant(vV(i),du_dp(i),'linear','none');
+        par.FdPdv = griddedInterpolant(vV(i),1./dv_dp(i),'linear','none');
 
-    Steam_frequencies(j,k) = frequency_calculator(par);
-    fprintf('The Steam solution oscillates at a frequency of %f. \n',Steam_frequencies(j,k));
+        Steam_frequencies(j,k) = frequency_calculator(par);
+        % fprintf('The Steam solution oscillates at a frequency of %f. \n',Steam_frequencies(j,k));
 
-    IG_frequencies(j,k) = coldfreq(par);
-    fprintf('The Ideal Gas solution oscillates at a frequency of %f. \n',IG_frequencies(j,k));
+        IG_frequencies(j,k) = coldfreq(par);
+        % fprintf('The Ideal Gas solution oscillates at a frequency of %f. \n',IG_frequencies(j,k));
     end
 end
 %%post processing

@@ -5,22 +5,33 @@ addpath XSteam_Matlab_v2.6;
 addpath Ideal_Gas;
 addpath Steam
 %closed = true;
-par.sb = 80; % 300 m^2 
-par.sc = 1;   % 1 m^2
+
+% OFG parameters
+par.sb = 40; % 300 m^2 
+par.sc = 0.5;   % 1 m^2
 par.g = 9.81;% gravitational acceleration in m*s^-2
 par.rho = 1000; % water density in kg*m^-3
 par.gamma=7/5; % adiabatic exponent for diatomic ideal gas - unitless
 par.alpha = 5/2; %diatomic ideal gas constant - unitless
 par.Pa0 = 1e5; %atmospheric pressure at equilibrium in Pa
 par.H = 8;
-par.sl=1;
+par.sl=par.sc;
 par.L=5;
 
-nx=150;
-delta = 1e-6;%bar
+% EL Jefe Parameters:
+par.sb = 4;
+par.sc = 0.07;
+par.sl = par.sc;
+par.H = 1;
+par.L = 1;
+% par.Pa0 = 6.1e4;
+
+
+nx=50;
+% delta = 1e-6;%bar
 %xx = linspace(4,6.999,nx);
 xx = logspace(-3,log10(par.H),nx);% actually H-xbar
-ny = 151;
+ny = 51;
 yy = linspace(0,30,ny);
 
 freq = zeros(ny,nx);
@@ -33,6 +44,7 @@ for a=1:nx
             par.Vol_0 = par.sb*(par.H-par.xbar); %initial (equilibrium) volume in m^3
             P_0 = par.rho*par.g*(par.delxy) + par.Pa0; %initial pressure in (Pascal)
             xv = 1 - 1e-2;
+            % xv=0.5;
             sv=XSteam('sV_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
             sl=XSteam('sL_p',P_0/1e5)*1e3; %specific entropy J*kg^-1*degC^-1
             s = xv*sv + (1-xv)*sl; % gives specific entropy of water+vapor mixture in J/kg/C
@@ -43,8 +55,12 @@ for a=1:nx
             vV=zeros(1,length(P));  % vapor volume (m^3)
             du_dp = zeros(1,length(P)); %dU/dP in (kJ/K/Pa)
             dv_dp = zeros(1,length(P)); %dV/dP in (m^3/Pa)
+            
             for i=1:length(P)
+                delta = sqrt(eps(P(i)));
                 vV(i) = XSteam('v_ps',P(i),s/1e3)*par.m; %volume in m^3
+                xx1 = XSteam('x_ps',P(i),s/1e3);
+                assert(xx1>0);
                 du_dp(i) = (XSteam('u_ps',P(i)+delta,s/1e3)-XSteam('u_ps',P(i)-delta,s/1e3))*1e3*par.m/(2*delta*1e5);% enthalpy in mks units, pressure in Pa
                 dv_dp(i) = (XSteam('v_ps',P(i)+delta,s/1e3)-XSteam('v_ps',P(i)-delta,s/1e3))*par.m/(2*delta*1e5);% m^3/Pa
             end
@@ -93,8 +109,8 @@ contour_levels = [0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 1.0 1.2 1.4 1.6 1.8 
 contour(xx,yy,(freq),contour_levels,'Color','k','ShowText','on');
 fn = get(gca,'FontName')
 set(gca,'FontSize',16);
-xlabel('${H}-\bar{x}$ (m)','Interpreter','latex');
-ylabel('$\bar{y}$ (m)','Interpreter','latex');
+xlabel('Trapped Vapor Thickness (${H}-\bar{x}$) (m)','Interpreter','latex');
+ylabel('Conduit Fill Level ($\bar{y}$) (m)','Interpreter','latex','FontName','Helvetica');
 hcb.Label.String = 'Frequency (Hz)';
 hcb.Label.FontSize=16;
 set(gcf,'Color','w');
@@ -102,7 +118,7 @@ set(gca,'XScale','log');
 set(gca,'XTick',10.^[-3 -2 -1 0 1])
 %saveas(gcf,'ofg_application.svg');
 % export_fig('ofg_application.eps');
-exportgraphics(gcf,'ofg_application_steam.pdf','ContentType','vector')
+exportgraphics(gcf,'Figure8-ofg_application_steam.pdf','ContentType','vector')
 
 
 %% Now, solve the ODE directly for ofg.

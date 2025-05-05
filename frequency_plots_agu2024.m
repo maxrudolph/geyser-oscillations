@@ -201,7 +201,7 @@ tank_level = -(water_level(2,:) - water_level(1,:)); % measured upward from bott
 %% Spectrogram
 addpath Steam/
 addpath XSteam_Matlab_v2.6/
-inst=[3] %sensors_plot
+inst=[2] %sensors_plot 3=bottom of conduit
 window_s = 10; % length of window, in seconds
 step_s = 5;
 % inst=4;

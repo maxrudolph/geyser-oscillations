@@ -179,7 +179,7 @@ xlabel('Frequency (Hz)');
 ylabel('Power (db/Hz)?')
 
 %% compute spectrograms for pressure and vertical component broadband
-window_size=fs*1*120;
+window_size=fs*1*30;
 overlap = window_size*100/120;%window_size*0.95;
 % t1a and t2a are set in the previous cell.
 for i=1:2
